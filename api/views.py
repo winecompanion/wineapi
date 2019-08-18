@@ -9,5 +9,5 @@ class EventListView(APIView):
         """Returns a list of Events available"""
         example_event = {'name': 'Hello Event', 'description': 'Example Event'}
 
-        return Response(example_event)
+        return Response({'Message': 'Hello!'})
 
