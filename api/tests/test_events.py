@@ -1,7 +1,7 @@
 import datetime
+from django.test import Client
 from django.test import TestCase
-from api.models import EventOccurrence
-
+from api.models import Event
 
 class TestEvents(TestCase):
     def test_dates_between_threshold(self):
@@ -17,8 +17,19 @@ class TestEvents(TestCase):
             datetime.date(2019, 8, 28),
             datetime.date(2019, 8, 30),
         ]
-        result = EventOccurrence.calculate_dates_in_threshold(
+        result = Event.calculate_dates_in_threshold(
                 start, end, weekdays)
 
         self.assertEqual(expected, result)
 
+    def test_event_endpoint_get(self):    
+        c = Client()
+        response = c.get('/api/events/')
+        result = response.status_code
+        self.assertEqual(200, result)
+
+    def test_event_endpoint_post(self):
+        c = Client()
+        response = c.post('/api/events/', {'name': 'exampleName', 'description': 'exampleDescription'})
+        response = c.get('/api/events/')
+        self.assertEqual(response.json(), [{'name': 'exampleName', 'description': 'exampleDescription'}])  

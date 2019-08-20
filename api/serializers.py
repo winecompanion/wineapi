@@ -7,7 +7,7 @@ class EventSerializer(serializers.ModelSerializer):
         fields = ('name','description')
 
 class CreateRecurrentEventsSerializer(serializers.Serializer):    
-        start = serializers.IntegerField()
-        end = serializers.IntegerField()
-        weekdays = serializers.IntegerField()
+        start = serializers.DateTimeField()
+        end = serializers.DateTimeField()
+        weekdays = serializers.DateTimeField()
 

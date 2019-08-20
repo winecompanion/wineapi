@@ -20,7 +20,7 @@ class Event(models.Model):
 
 
 class EventOccurrence(models.Model):
-    start = models.DateTimeField()
-    end = models.DateTimeField()
+    start = models.IntegerField()
+    end = models.IntegerField()
     vacancies = models.IntegerField()
     event = models.ForeignKey('Event', on_delete=models.CASCADE)
