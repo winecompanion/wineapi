@@ -23,3 +23,17 @@ class EventOccurrence(models.Model):
             if day.weekday() in weekdays:
                 dates.append(day)
         return dates
+
+
+class Winery(models.Model):
+    """Model for winery"""
+
+    name = models.CharField(max_length=30)
+    description = models.TextField()
+    # To do: Imagen
+    website = models.CharField(max_length=40)
+    available_since = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
