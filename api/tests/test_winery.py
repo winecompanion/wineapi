@@ -1,5 +1,5 @@
 from django.test import TestCase
-from api.models import Winery 
+from api.models import Winery
 from api.serializers import WinerySerializer
 
 
@@ -20,7 +20,7 @@ class TestWinery(TestCase):
         winery.save()
 
     def test_invalid_winery_creation(self):
-        winery = Winery(**self.invalid_winery_data) 
+        winery = Winery(**self.invalid_winery_data)
         with self.assertRaises(Exception):
             winery.full_clean()
 
@@ -32,5 +32,3 @@ class TestWinery(TestCase):
         serializer = WinerySerializer(data=self.invalid_winery_data)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors), set(['name', 'website']))
- 
- 
