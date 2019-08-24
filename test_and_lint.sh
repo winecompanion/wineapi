@@ -1,4 +1,6 @@
 python manage.py test api/tests/
+python manage.py test users/
+
 
 echo -e "\nLinting codebase\n"
 

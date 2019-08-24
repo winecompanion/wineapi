@@ -3,6 +3,7 @@ from django.test import Client
 from django.test import TestCase
 from api.models import Event
 
+
 class TestEvents(TestCase):
     def test_dates_between_threshold(self):
         MONDAY, WEDNESDAY, FRIDAY = 0, 2, 4
@@ -22,7 +23,7 @@ class TestEvents(TestCase):
 
         self.assertEqual(expected, result)
 
-    def test_event_endpoint_get(self):    
+    def test_event_endpoint_get(self):
         c = Client()
         response = c.get('/api/events/')
         result = response.status_code
