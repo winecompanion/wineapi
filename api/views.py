@@ -14,7 +14,8 @@ class EventsView(viewsets.ModelViewSet):
         event = self.get_object()
         serializer = CreateRecurrentEventsSerializer(data=request.data)
         if serializer.is_valid():
-            # evento.calculate_dates_in_threshold(serializer.data['fechaInicio'], serializer.data['fechaFin'],serializer.data['diadelasemana'])
+            # evento.calculate_dates_in_threshold(serializer.data['fechaInicio'], serializer.data['fechaFin'],
+            # serializer.data['diadelasemana'])
             # user.save()
             return Response(
                     event.calculate_dates_in_threshold(
