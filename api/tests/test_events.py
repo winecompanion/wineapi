@@ -1,4 +1,5 @@
 import datetime
+import simplejson
 from django.test import Client
 from django.test import TestCase
 from api.models import Event
@@ -31,6 +32,10 @@ class TestEvents(TestCase):
 
     def test_event_endpoint_post(self):
         c = Client()
-        response = c.post('/api/events/', {'name': 'exampleName', 'description': 'exampleDescription'})
-        response = c.get('/api/events/')
-        self.assertEqual(response.json(), [{'name': 'exampleName', 'description': 'exampleDescription'}])  
+        payload = {
+        "name": "test",
+        "description": "test",
+        "schedule":[{"start":"2019-08-20T15:24:36.257950", "end": "2019-08-20T15:24:36.257950", "weekdays": "1"}]
+        }
+        response = c.post('/api/events/', simplejson.dumps(payload), content_type="application/json")
+        self.assertEqual(200, response.status_code)  
