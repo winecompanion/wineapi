@@ -9,7 +9,6 @@ class TestUser(TestCase):
                 'email': 'example@winecompanion.com',
                 'password': '1234',
                 'name': 'First Name',
-                'age': '40',
                 }
         self.invalid_user_data = {
                 'email': '',
@@ -26,5 +25,5 @@ class TestUser(TestCase):
             user.full_clean()
         self.assertEqual(
             set(cm.exception.error_dict.keys()),
-            set(['email', 'password', 'name', 'age'])
+            set(['email', 'password', 'name'])
         )

@@ -1,2 +1,3 @@
 [flake8]
-exclude=venv,winecompanion/settings.py
+exclude=venv,winecompanion/settings.py,api/migrations,users/migrations
+max-line-length = 120
