@@ -1,28 +1,10 @@
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
+from rest_framework import serializers
 from django.utils import timezone
 from django.db import models
-
-
-class WineUser(AbstractBaseUser, PermissionsMixin):
-
-    email = models.EmailField(('email address'), unique=True)
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    date_joined = models.DateTimeField(default=timezone.now)
-
-    # Custom fields
-    name = models.CharField(max_length=30)
-    birth_date = models.DateField(null=True, blank=True)
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
-
-    # objects = CustomUserManager()
-
-    def __str__(self):
-        return self.email
+from api.models import Winery
 
 
 class WineUserManager(BaseUserManager):
@@ -55,3 +37,45 @@ class WineUserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
         return self.create_user(email, password, **extra_fields)
+
+
+class WineUser(AbstractBaseUser, PermissionsMixin):
+
+    email = models.EmailField(('email address'), unique=True)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    date_joined = models.DateTimeField(default=timezone.now)
+
+    # Custom fields
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    birth_date = models.DateField(null=True, blank=True)
+    winery = models.ForeignKey(Winery, null=True, blank=True, on_delete=models.PROTECT)
+
+    objects = WineUserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name']
+
+    # objects = CustomUserManager()
+
+    def __str__(self):
+        return self.email
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Serializes a user for the api endpoint"""
+    class Meta:
+        model = WineUser
+        fields = ('email', 'password', 'first_name', 'last_name', 'birth_date')
+        extra_kwargs = {
+            'password': {
+                'write_only': True,
+                'style': {'input_type': 'password'}
+            }
+        }
+
+    def create(self, validated_data):
+        """Create and return a new user"""
+        user = WineUser.objects.create_user(**validated_data)
+        return user
