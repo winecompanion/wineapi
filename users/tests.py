@@ -22,7 +22,7 @@ class TestUser(TestCase):
         user.save()
 
     def test_invalid_user_creation(self):
-        """Test obligatory fields"""
+        """Test required fields"""
         user = WineUser(**self.invalid_user_data)
         with self.assertRaises(ValidationError) as cm:
             user.full_clean()
@@ -37,7 +37,7 @@ class TestUser(TestCase):
         self.assertEqual(set(user.data.keys()), set(['email', 'first_name', 'last_name', 'birth_date']))
 
     def test_invalid_user_serializer(self):
-        """Test that every obligatory field is required"""
+        """Test required fields"""
         serializer = UserSerializer(data=self.invalid_user_data)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors), set(['email', 'password', 'first_name', 'last_name']))
