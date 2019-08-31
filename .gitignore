@@ -1,5 +1,6 @@
 #Migrations
 users/migrations/
+api/migrations/
 #
 .vscode
 # Byte-compiled / optimized / DLL files

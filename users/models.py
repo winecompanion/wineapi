@@ -57,8 +57,6 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
-    # objects = CustomUserManager()
-
     def __str__(self):
         return self.email
 
