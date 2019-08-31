@@ -13,7 +13,7 @@ class Event(models.Model):
         if not end:
             return [start]
         dates = []
-        days_between = (end - start).days
+        days_between = (end - start).days + 1
         for i in range(days_between):
             day = start + datetime.timedelta(days=i)
             if day.weekday() in weekdays:
