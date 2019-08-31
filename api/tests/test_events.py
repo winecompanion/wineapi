@@ -121,6 +121,19 @@ class TestEvents(TestCase):
         self.assertEqual(db_event.name, data["name"])
         self.assertEqual(12, len(db_event.occurrences.all()))
 
+    def test_invalid_event_creation(self):
+        # data = self.valid_data['one_schedule_with_weekdays']
+        data = {}
+        # data.pop('schedule')
+        response = self.client.post(reverse('event-list'), data=data, content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            set(response.data['errors'].keys()),
+            set(['name', 'description', 'schedule', 'vacancies'])
+        )
+        # self.assertIn('errors', response.data)
+        # self.assertIn('schedule', response.data['errors'])
+
     def test_event_endpoint_get(self):
         c = Client()
         response = c.get("/api/events/")
