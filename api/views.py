@@ -1,17 +1,17 @@
-from rest_framework.response import Response
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from .models import Event, EventOccurrence
-from .serializers import EventSerializer, ScheduleSerializer
+from rest_framework.reverse import reverse
+from rest_framework.response import Response
+from .models import Event
+from .serializers import EventSerializer
 
 
 class EventsView(viewsets.ModelViewSet):
     queryset = Event.objects.all().order_by('name')
     serializer_class = EventSerializer
-    
+
     def create(self, request):
-        serializer = RecurrentEventSerializer(data=request.data)
-        if serializer.is_valid():
-            return Response(serializer.calculate(request.data), status=status.HTTP_200_OK)                
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = EventSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        event = serializer.create(serializer.validated_data)
+        return Response({'url': reverse('event-detail', args=[event.id])}, status=status.HTTP_201_CREATED)
