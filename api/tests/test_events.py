@@ -75,8 +75,7 @@ class TestEvents(TestCase):
             datetime.date(2019, 8, 30),
         ]
         result = Event.calculate_dates_in_threshold(start, end, weekdays)
-
-        self.assertEqual(expected, result)
+        self.assertEqual(result, expected)
 
     def test_single_ocurrence_event_creation_without_to_date(self):
         data = self.valid_data["one_schedule_no_to_date"]
