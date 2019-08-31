@@ -14,15 +14,12 @@ class ScheduleSerializer(serializers.Serializer):
 
 
 class EventSerializer(serializers.HyperlinkedModelSerializer):
-    vacancies = serializers.IntegerField()
-    schedule = ScheduleSerializer(many=True)
+    vacancies = serializers.IntegerField(write_only=True)
+    schedule = ScheduleSerializer(many=True, write_only=True)
 
     class Meta:
         model = Event
         fields = ['id', 'name', 'description', 'vacancies', 'schedule']
-        extra_kwargs = {
-            'vacancies': {'write_only': True}
-        }
 
     def create(self, data):
         # TODO: finish docstring

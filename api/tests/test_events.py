@@ -1,7 +1,7 @@
 import datetime
 from django.test import Client, TestCase
 from django.urls import reverse
-from api.models import Event
+from api.models import Event, EventOccurrence
 from api.serializers import EventSerializer
 
 
@@ -116,3 +116,54 @@ class TestEvents(TestCase):
         response = c.get("/api/events/")
         result = response.status_code
         self.assertEqual(200, result)
+
+    def test_filter_event_by_date(self):
+        """Test returning events with future occurrencies"""
+        event1 = Event.objects.create(name='Evento 1', description='Desc 1')
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2')
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event1
+        )
+        EventOccurrence.objects.create(
+            start='2019-05-31T20:00:00',
+            end='2019-05-31T23:00:00',
+            vacancies=50,
+            event=event2
+        )
+        res = self.client.get(
+            reverse("event-list")
+        )
+        serializer1 = EventSerializer(event1)
+        serializer2 = EventSerializer(event2)
+        self.assertIn(serializer1.data, res.data)
+        self.assertNotIn(serializer2.data, res.data)
+
+    def test_filter_event_by_name(self):
+        """Test returning events that match a name"""
+        event1 = Event.objects.create(name='Event buscado', description='Desc 1')
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2')
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event1
+        )
+        EventOccurrence.objects.create(
+            start='2036-05-31T20:00:00',
+            end='2036-05-31T23:00:00',
+            vacancies=50,
+            event=event2
+        )
+        res = self.client.get(
+            reverse("event-list"),
+            {'search': 'buscado'}
+        )
+
+        serializer1 = EventSerializer(event1)
+        serializer2 = EventSerializer(event2)
+        # import ipdb; ipdb.set_trace()
+        self.assertIn(serializer1.data, res.data)
+        self.assertNotIn(serializer2.data, res.data)
