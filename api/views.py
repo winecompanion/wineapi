@@ -18,6 +18,6 @@ class EventsView(viewsets.ModelViewSet):
     def create(self, request):
         serializer = EventSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         event = serializer.create(serializer.validated_data)
         return Response({'url': reverse('event-detail', args=[event.id])}, status=status.HTTP_201_CREATED)
