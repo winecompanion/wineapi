@@ -164,7 +164,7 @@ class TestEvents(TestCase):
         self.assertIn(serializer1.data, res.data)
         self.assertNotIn(serializer2.data, res.data)
 
-    def test_filter_event_by_name(self):
+    def test_search_event_by_name(self):
         """Test returning events that match a name"""
         event1 = Event.objects.create(name='Event buscado', description='Desc 1')
         event2 = Event.objects.create(name='Evento 2', description='Desc 2')
@@ -187,6 +187,30 @@ class TestEvents(TestCase):
 
         serializer1 = EventSerializer(event1)
         serializer2 = EventSerializer(event2)
-        # import ipdb; ipdb.set_trace()
         self.assertIn(serializer1.data, res.data)
         self.assertNotIn(serializer2.data, res.data)
+
+    def test_filter_events_until_date(self):
+        """Test returning events with a date no superior than the specified"""
+        event1 = Event.objects.create(name='Event buscado', description='Desc 1')
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2')
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event1
+        )
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event2
+        )
+        res = self.client.get(
+            reverse("event-list"),
+            {'to_date': '2031-05-31'}
+        )
+        serializer1 = EventSerializer(event1)
+        serializer2 = EventSerializer(event2)
+        self.assertNotIn(serializer1.data, res.data)
+        self.assertIn(serializer2.data, res.data)
