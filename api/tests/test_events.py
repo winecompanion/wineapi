@@ -1,4 +1,5 @@
 import datetime
+from parameterized import parameterized
 from django.test import Client, TestCase
 from django.urls import reverse
 from api.models import Event, EventOccurrence
@@ -79,8 +80,13 @@ class TestEvents(TestCase):
         result = Event.calculate_dates_in_threshold(start, end, weekdays)
         self.assertEqual(result, expected)
 
-    def test_single_ocurrence_event_creation_without_to_date(self):
-        data = self.valid_data["one_schedule_no_to_date"]
+    @parameterized.expand([
+       ('one_schedule_no_to_date', 1),
+       ('one_schedule_with_weekdays', 7),
+       ('multiple_schedules_with_weekdays', 12),
+    ])
+    def test_event_creation_endpoint_with_different_schedules(self, data_key, expected_occurrences_count):
+        data = self.valid_data[data_key]
         serializer = EventSerializer(data=data)
         self.assertTrue(serializer.is_valid())
         response = self.client.post(
@@ -91,48 +97,16 @@ class TestEvents(TestCase):
 
         db_event = Event.objects.first()
         self.assertEqual(db_event.name, data["name"])
-        self.assertEqual(1, len(db_event.occurrences.all()))
-
-    def test_single_ocurrence_event_creation_with_weekdays(self):
-        data = self.valid_data["one_schedule_with_weekdays"]
-        serializer = EventSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
-        response = self.client.post(
-            reverse("event-list"), data=data, content_type="application/json"
-        )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(set(response.data.keys()), set(["url"]))
-
-        db_event = Event.objects.first()
-        self.assertEqual(db_event.name, data["name"])
-        self.assertEqual(7, len(db_event.occurrences.all()))
-
-    def test_multiple_schedules_with_weekdays(self):
-        data = self.valid_data["multiple_schedules_with_weekdays"]
-        serializer = EventSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
-        response = self.client.post(
-            reverse("event-list"), data=data, content_type="application/json"
-        )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(set(response.data.keys()), set(["url"]))
-
-        db_event = Event.objects.first()
-        self.assertEqual(db_event.name, data["name"])
-        self.assertEqual(12, len(db_event.occurrences.all()))
+        self.assertEqual(expected_occurrences_count, len(db_event.occurrences.all()))
 
     def test_invalid_event_creation(self):
-        # data = self.valid_data['one_schedule_with_weekdays']
         data = {}
-        # data.pop('schedule')
         response = self.client.post(reverse('event-list'), data=data, content_type='application/json')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             set(response.data['errors'].keys()),
             set(['name', 'description', 'schedule', 'vacancies'])
         )
-        # self.assertIn('errors', response.data)
-        # self.assertIn('schedule', response.data['errors'])
 
     def test_event_endpoint_get(self):
         c = Client()
@@ -187,6 +161,5 @@ class TestEvents(TestCase):
 
         serializer1 = EventSerializer(event1)
         serializer2 = EventSerializer(event2)
-        # import ipdb; ipdb.set_trace()
         self.assertIn(serializer1.data, res.data)
         self.assertNotIn(serializer2.data, res.data)
