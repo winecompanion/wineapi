@@ -13,13 +13,13 @@ class ScheduleSerializer(serializers.Serializer):
         child=serializers.IntegerField())
 
 
-class EventSerializer(serializers.HyperlinkedModelSerializer):
+class EventSerializer(serializers.ModelSerializer):
     vacancies = serializers.IntegerField(write_only=True)
     schedule = ScheduleSerializer(many=True, write_only=True)
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'description', 'vacancies', 'schedule']
+        fields = ['id', 'name', 'description', 'cancelled',  'winery', 'vacancies', 'schedule']
 
     def create(self, data):
         # TODO: finish docstring
@@ -64,12 +64,6 @@ class EventSerializer(serializers.HyperlinkedModelSerializer):
                 )
 
         return event
-
-
-class CreateRecurrentEventsSerializer(serializers.Serializer):
-    start = serializers.DateTimeField()
-    end = serializers.DateTimeField()
-    weekdays = serializers.DateTimeField()
 
 
 class WinerySerializer(serializers.ModelSerializer):
