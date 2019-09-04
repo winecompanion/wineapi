@@ -2,9 +2,25 @@ import datetime
 from django.db import models
 
 
+class Winery(models.Model):
+    """Model for winery"""
+
+    name = models.CharField(max_length=30)
+    description = models.TextField()
+    website = models.CharField(max_length=40)
+    available_since = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Event(models.Model):
+    """"Model for Events"""
+
     name = models.CharField(max_length=80)
     description = models.TextField()
+    cancelled = models.DateTimeField(null=True, blank=True)
+    winery = models.ForeignKey(Winery, on_delete=models.PROTECT)
 
     @staticmethod
     def calculate_dates_in_threshold(start, end, weekdays):
@@ -29,15 +45,3 @@ class EventOccurrence(models.Model):
         Event,
         related_name='occurrences',
         on_delete=models.CASCADE)
-
-
-class Winery(models.Model):
-    """Model for winery"""
-
-    name = models.CharField(max_length=30)
-    description = models.TextField()
-    website = models.CharField(max_length=40)
-    available_since = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return self.name

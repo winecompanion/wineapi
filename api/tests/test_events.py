@@ -2,7 +2,7 @@ import datetime
 from parameterized import parameterized
 from django.test import Client, TestCase
 from django.urls import reverse
-from api.models import Event, EventOccurrence
+from api.models import Event, EventOccurrence, Winery
 from api.serializers import EventSerializer
 
 
@@ -11,11 +11,17 @@ MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY = list(range(7))
 
 class TestEvents(TestCase):
     def setUp(self):
+        self.winery = Winery.objects.create(
+                name='Bodega1',
+                description='Hola',
+                website='hola.com',
+        )
         self.valid_data = {
             "one_schedule_no_to_date": {
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
+                "winery": self.winery.id,
                 "schedule": [
                     {
                         "from_date": "2019-08-28",
@@ -30,6 +36,7 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
+                "winery": self.winery.id,
                 "schedule": [
                     {
                         "from_date": "2019-08-28",
@@ -44,6 +51,7 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
+                "winery": self.winery.id,
                 "schedule": [
                     {
                         "from_date": "2019-08-28",
@@ -105,7 +113,7 @@ class TestEvents(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             set(response.data['errors'].keys()),
-            set(['name', 'description', 'schedule', 'vacancies'])
+            set(['name', 'description', 'winery', 'schedule', 'vacancies'])
         )
 
     def test_event_endpoint_get(self):
@@ -116,8 +124,8 @@ class TestEvents(TestCase):
 
     def test_filter_event_by_date(self):
         """Test returning events with future occurrencies"""
-        event1 = Event.objects.create(name='Evento 1', description='Desc 1')
-        event2 = Event.objects.create(name='Evento 2', description='Desc 2')
+        event1 = Event.objects.create(name='Evento 1', description='Desc 1', winery=self.winery)
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery)
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
@@ -140,8 +148,8 @@ class TestEvents(TestCase):
 
     def test_search_event_by_name(self):
         """Test returning events that match a name"""
-        event1 = Event.objects.create(name='Event buscado', description='Desc 1')
-        event2 = Event.objects.create(name='Evento 2', description='Desc 2')
+        event1 = Event.objects.create(name='Event buscado', description='Desc 1', winery=self.winery)
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery)
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
@@ -166,8 +174,9 @@ class TestEvents(TestCase):
 
     def test_filter_events_until_date(self):
         """Test returning events with a date no superior than the specified"""
-        event1 = Event.objects.create(name='Event buscado', description='Desc 1')
-        event2 = Event.objects.create(name='Evento 2', description='Desc 2')
+
+        event1 = Event.objects.create(name='Event buscado', description='Desc 1', winery=self.winery)
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery)
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
