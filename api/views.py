@@ -7,8 +7,8 @@ from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import FilterSet, DateFilter
 
-from .models import Event
-from .serializers import EventSerializer
+from .models import Event, Winery
+from .serializers import EventSerializer, WinerySerializer
 
 
 class EventFilter(FilterSet):
@@ -38,3 +38,20 @@ class EventsView(viewsets.ModelViewSet):
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         event = serializer.create(serializer.validated_data)
         return Response({'url': reverse('event-detail', args=[event.id])}, status=status.HTTP_201_CREATED)
+
+
+class WineryView(viewsets.ModelViewSet):
+    queryset = Winery.objects.all()
+    serializer_class = WinerySerializer
+
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    search_fields = ['name', 'description']
+
+    # to do: filterset_class
+
+    def create(self, request):
+        serializer = WinerySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        winery = serializer.create(serializer.validated_data)
+        return Response({'url': reverse('winery-detail', args=[winery.id])}, status=status.HTTP_201_CREATED)

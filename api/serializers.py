@@ -71,7 +71,3 @@ class WinerySerializer(serializers.ModelSerializer):
     class Meta:
         model = Winery
         fields = ('name', 'description', 'website', 'available_since')
-
-    def create(self, validated_data):
-        winery = Winery.objects.create(**validated_data)
-        return winery
