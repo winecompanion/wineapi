@@ -7,8 +7,13 @@ from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import FilterSet, DateFilter
 
-from .models import Event, Winery
-from .serializers import EventSerializer, WinerySerializer
+from .models import Event, Winery, WineLine, Wine
+from .serializers import (
+    EventSerializer,
+    WinerySerializer,
+    WineLineSerializer,
+    WineSerializer,
+)
 
 
 class EventFilter(FilterSet):
@@ -55,3 +60,29 @@ class WineryView(viewsets.ModelViewSet):
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         winery = serializer.create(serializer.validated_data)
         return Response({'url': reverse('winery-detail', args=[winery.id])}, status=status.HTTP_201_CREATED)
+
+
+class WineView(viewsets.ModelViewSet):
+    queryset = Wine.objects.all()
+    serializer_class = WineSerializer
+
+    def create(self, request):
+        serializer = WineSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        wine = serializer.create(serializer.validated_data)
+        return Response({'url': reverse('wine-detail', args=[wine.id])}, status=status.HTTP_201_CREATED)
+
+
+class WineLineView(viewsets.ModelViewSet):
+    queryset = WineLine.objects.all()
+    serializer_class = WineLineSerializer
+
+    def create(self, request):
+        serializer = WineLineSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        wine_line = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('wine-line-detail', args=[wine_line.id])},
+            status=status.HTTP_201_CREATED)

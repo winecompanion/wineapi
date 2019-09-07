@@ -1,6 +1,6 @@
 import datetime
 from rest_framework import serializers
-from .models import Event, EventOccurrence, Winery
+from .models import Event, EventOccurrence, Winery, WineLine, Wine
 
 
 class ScheduleSerializer(serializers.Serializer):
@@ -71,3 +71,17 @@ class WinerySerializer(serializers.ModelSerializer):
     class Meta:
         model = Winery
         fields = ('name', 'description', 'website', 'available_since')
+
+
+class WineLineSerializer(serializers.ModelSerializer):
+    """Serializes a wine line for the api endpoint"""
+    class Meta:
+        model = WineLine
+        fields = ('name', 'description', 'winery')
+
+
+class WineSerializer(serializers.ModelSerializer):
+    """Serializes wines for the api endpoint"""
+    class Meta:
+        model = Wine
+        fields = ('name', 'description', 'winery', 'varietal', 'wine_line')
