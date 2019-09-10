@@ -1,6 +1,8 @@
 import datetime
 from django.db import models
 
+from . import VARIETALS
+
 
 class Winery(models.Model):
     """Model for winery"""
@@ -13,6 +15,37 @@ class Winery(models.Model):
     class Meta:
         verbose_name = 'Winery'
         verbose_name_plural = 'Wineries'
+
+    def __str__(self):
+        return self.name
+
+
+class WineLine(models.Model):
+    """Model for winery wine lines"""
+    name = models.CharField(max_length=20)
+    description = models.TextField()
+    winery = models.ForeignKey(Winery, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = 'Wine-line'
+        verbose_name_plural = 'Wine-lines'
+
+    def __str__(self):
+        return self.name
+
+
+class Wine(models.Model):
+    """Model for winery wines"""
+    name = models.CharField(max_length=20)
+    description = models.TextField()
+    winery = models.ForeignKey(Winery, on_delete=models.CASCADE)
+    # to discuss: choices vs foreign key
+    varietal = models.CharField(
+        max_length=20,
+        choices=VARIETALS,
+        default='4',
+    )
+    wine_line = models.ForeignKey(WineLine, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
