@@ -10,6 +10,10 @@ class Winery(models.Model):
     website = models.CharField(max_length=40)
     available_since = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        verbose_name = 'Winery'
+        verbose_name_plural = 'Wineries'
+
     def __str__(self):
         return self.name
 
