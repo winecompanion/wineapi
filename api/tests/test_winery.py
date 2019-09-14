@@ -43,16 +43,14 @@ class TestWinery(TestCase):
         response = self.client.get(
             reverse('winery-list')
         )
-        result = response.status_code
-        self.assertEqual(200, result)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_winery_endpoint_create(self):
         response = self.client.post(
             reverse('winery-list'),
             self.valid_winery_data
         )
-        result = response.status_code
-        self.assertEqual(status.HTTP_201_CREATED, result)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_winery_endpoint_create_with_invalid_data(self):
         response = self.client.post(
@@ -127,16 +125,14 @@ class TestWines(TestCase):
         response = self.client.get(
             reverse('wine-list')
         )
-        result = response.status_code
-        self.assertEqual(200, result)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_wine_endpoint_create(self):
         response = self.client.post(
             reverse('wine-list'),
             self.valid_wine_data
         )
-        result = response.status_code
-        self.assertEqual(status.HTTP_201_CREATED, result)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_wine_endpoint_create_with_invalid_data(self):
         response = self.client.post(
@@ -204,16 +200,14 @@ class TestWineLines(TestCase):
         response = self.client.get(
             reverse('wine-line-list'),
         )
-        result = response.status_code
-        self.assertEqual(200, result)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_wineline_endpoint_create(self):
         response = self.client.post(
             reverse('wine-line-list'),
             self.valid_wineline_data
         )
-        result = response.status_code
-        self.assertEqual(status.HTTP_201_CREATED, result)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_wineline_endpoint_create_with_invalid_data(self):
         response = self.client.post(
