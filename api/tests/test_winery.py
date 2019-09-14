@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.exceptions import ValidationError
+
 from rest_framework import status
 
 from api.models import Winery, WineLine, Wine
@@ -32,11 +33,10 @@ class TestWinery(TestCase):
             winery.full_clean()
 
     def test_winery_serializer(self):
-        winery = WinerySerializer(self.valid_winery_data)
-        #self.assertTrue(serializer.is_valid())
-        #parameters = ['name', 'description', 'website', 'available_since']
-        import pdb; pdb.set_trace()
-        self.assertEqual(set(winery.data.keys()), set(parameters))
+        serializer = WinerySerializer(data=self.valid_winery_data)
+        self.assertTrue(serializer.is_valid())
+        parameters = ['name', 'description', 'website', 'location', 'available_since']
+        self.assertEqual(set(serializer.data.keys()), set(parameters))
 
     def test_invalid_winery_serializer(self):
         serializer = WinerySerializer(data=self.invalid_winery_data)

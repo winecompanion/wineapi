@@ -1,6 +1,6 @@
 import datetime
 from django.db import models
-from django.contrib.gis.db import models as gis_models
+from django.contrib.gis.db.models import PointField
 from django.contrib.gis import geos
 from django.contrib.gis.measure import Distance
 
@@ -14,7 +14,7 @@ class Winery(models.Model):
     description = models.TextField()
     website = models.CharField(max_length=40)
     available_since = models.DateTimeField(null=True, blank=True)
-    location = gis_models.PointField(u"longitude/latitude", geography=True, blank=True, null=True)
+    location = PointField(u"longitude/latitude", geography=True, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Winery'
