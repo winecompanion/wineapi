@@ -1,6 +1,13 @@
 import datetime
 from rest_framework import serializers
-from .models import Event, EventOccurrence, Winery, WineLine, Wine
+from .models import (
+    Event,
+    EventOccurrence,
+    Winery,
+    WineLine,
+    Wine,
+    EventCategory,
+)
 
 
 class ScheduleSerializer(serializers.Serializer):
@@ -13,13 +20,24 @@ class ScheduleSerializer(serializers.Serializer):
         child=serializers.IntegerField())
 
 
+class EventCategorySerializer(serializers.Serializer):
+    """Serializer for event categories"""
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
+    class Meta:
+        # model = EventCategory
+        fields = ('id', 'name')
+
+
 class EventSerializer(serializers.ModelSerializer):
     vacancies = serializers.IntegerField(write_only=True)
     schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
+    categories = EventCategorySerializer(many=True)
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'description', 'cancelled',  'winery', 'vacancies', 'schedule']
+        fields = ['id', 'name', 'description', 'cancelled',  'winery', 'categories', 'vacancies', 'schedule']
 
     def create(self, data):
         # TODO: finish docstring
@@ -30,6 +48,7 @@ class EventSerializer(serializers.ModelSerializer):
         """
         schedule = data.pop('schedule')
         vacancies = data.pop('vacancies')
+        categories = data.pop('categories')
         event = Event.objects.create(**data)
 
         for elem in schedule:
@@ -62,7 +81,8 @@ class EventSerializer(serializers.ModelSerializer):
                     vacancies=vacancies,
                     event=event
                 )
-
+        for category in categories:
+            event.categories.add(EventCategory.objects.get(pk=category['id']))
         return event
 
 
