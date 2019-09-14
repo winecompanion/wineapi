@@ -15,7 +15,7 @@ class ScheduleSerializer(serializers.Serializer):
 
 class EventSerializer(serializers.ModelSerializer):
     vacancies = serializers.IntegerField(write_only=True)
-    schedule = ScheduleSerializer(many=True, write_only=True)
+    schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
 
     class Meta:
         model = Event

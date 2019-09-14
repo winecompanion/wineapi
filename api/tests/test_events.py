@@ -71,6 +71,16 @@ class TestEvents(TestCase):
             },
         }
 
+        self.invalid_data = {
+            "empty_schedule": {
+                "name": "TEST_EVENT_NAME",
+                "description": "TEST_EVENT_DESCRIPTION",
+                "vacancies": 50,
+                "winery": self.winery.id,
+                "schedule": [],
+            },
+        }
+
         self.client = Client()
 
     def test_dates_between_threshold(self):
@@ -197,3 +207,12 @@ class TestEvents(TestCase):
         serializer2 = EventSerializer(event2)
         self.assertNotIn(serializer1.data, res.data)
         self.assertIn(serializer2.data, res.data)
+
+    def test_invalid_schedule(self):
+        data = self.invalid_data['empty_schedule']
+        serializer = EventSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        response = self.client.post(
+            reverse("event-list"), data=data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
