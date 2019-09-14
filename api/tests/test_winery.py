@@ -13,6 +13,7 @@ class TestWinery(TestCase):
                 'name': 'Bodega1',
                 'description': 'Hola',
                 'website': 'hola.com',
+                'location': 'POINT (106.84341430665 -6.1832427978516)',
         }
         self.invalid_winery_data = {
                 'description': 'description',
@@ -32,7 +33,10 @@ class TestWinery(TestCase):
 
     def test_winery_serializer(self):
         winery = WinerySerializer(self.valid_winery_data)
-        self.assertEqual(set(winery.data.keys()), set(['name', 'description', 'website', 'available_since']))
+        #self.assertTrue(serializer.is_valid())
+        #parameters = ['name', 'description', 'website', 'available_since']
+        import pdb; pdb.set_trace()
+        self.assertEqual(set(winery.data.keys()), set(parameters))
 
     def test_invalid_winery_serializer(self):
         serializer = WinerySerializer(data=self.invalid_winery_data)

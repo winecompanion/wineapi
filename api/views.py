@@ -13,6 +13,7 @@ from .serializers import (
     WinerySerializer,
     WineLineSerializer,
     WineSerializer,
+    MapsSerializer,
 )
 
 
@@ -86,3 +87,15 @@ class WineLineView(viewsets.ModelViewSet):
         return Response(
             {'url': reverse('wine-line-detail', args=[wine_line.id])},
             status=status.HTTP_201_CREATED)
+
+
+class MapsView(viewsets.ViewSet):
+    def create(self, request):
+        serializer = MapsSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        if serializer.data['location']:
+            location = serializer.data['location']
+            queryset = Winery.get_nearly_wineries(location)
+            serializer = WinerySerializer(queryset, many=True)
+            return Response(serializer.data)
