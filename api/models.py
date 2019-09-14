@@ -1,5 +1,8 @@
 import datetime
 from django.db import models
+from django.contrib.gis.db.models import PointField
+from django.contrib.gis import geos
+from django.contrib.gis.measure import Distance
 
 from . import VARIETALS
 
@@ -11,6 +14,7 @@ class Winery(models.Model):
     description = models.TextField()
     website = models.CharField(max_length=40)
     available_since = models.DateTimeField(null=True, blank=True)
+    location = PointField(u"longitude/latitude", geography=True, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Winery'
@@ -18,6 +22,13 @@ class Winery(models.Model):
 
     def __str__(self):
         return self.name
+
+    @staticmethod
+    def get_nearly_wineries(location):
+        current_point = geos.fromstr(location)
+        distance_from_point = {'km': 10}
+        wineries = Winery.objects.filter(location__distance_lt=(current_point, Distance(**distance_from_point)))
+        return wineries
 
 
 class WineLine(models.Model):

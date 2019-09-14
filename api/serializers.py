@@ -70,7 +70,7 @@ class WinerySerializer(serializers.ModelSerializer):
     """Serializes a winery for the api endpoint"""
     class Meta:
         model = Winery
-        fields = ('name', 'description', 'website', 'available_since')
+        fields = ('name', 'description', 'website', 'available_since', 'location')
 
 
 class WineLineSerializer(serializers.ModelSerializer):
@@ -85,3 +85,7 @@ class WineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wine
         fields = ('name', 'description', 'winery', 'varietal', 'wine_line')
+
+
+class MapsSerializer(serializers.Serializer):
+    location = serializers.CharField()
