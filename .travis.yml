@@ -1,11 +1,27 @@
 dist: xenial
+
 language: python
-python:
-  - "3.5"
-env:
-  - DJANGO=2.2 DB=sqlite
+
+before_install:
+  # update packages
+  - "sudo apt-get update -y"
+
+  # install python packages
+  - "sudo apt install -y python-dev python3-dev python-pip"
+
+  # install gdal
+  - "sudo apt install -y libgdal-dev libproj-dev libproj-dev"
+
+  # spatialite deps (see https://docs.djangoproject.com/en/2.0/ref/contrib/gis/install/spatialite/)
+  - "sudo apt install -y libsqlite3-dev spatialite-bin libsqlite3-mod-spatialite"
+
 install:
+  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then pip install --global-option=build_ext --global-option='-USQLITE_OMIT_LOAD_EXTENSION' pysqlite; fi
+
+  # install python gdal package (version must match installed GDAL lib)
+  - CFLAGS=-I/usr/include/gdal pip install GDAL==$(gdal-config --version | cut -d. -f1-2).*
   - pip install -r requirements.txt
+
 script:
   - python manage.py test
   - flake8 .
