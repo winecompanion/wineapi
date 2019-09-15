@@ -5,7 +5,7 @@ from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
-from django_filters import FilterSet, DateFilter, ModelMultipleChoiceFilter
+from django_filters import FilterSet, DateTimeFromToRangeFilter, ModelMultipleChoiceFilter
 
 from .models import Event, Winery, WineLine, Wine, EventCategory
 from .serializers import (
@@ -20,8 +20,7 @@ from .serializers import (
 class EventFilter(FilterSet):
     # https://django-filter.readthedocs.io/en/latest/guide/usage.html#declaring-filters
 
-    to_date = DateFilter(field_name='occurrences__start', lookup_expr='lt')
-    from_date = DateFilter(field_name='occurrences__start', lookup_expr='gte')
+    start = DateTimeFromToRangeFilter(field_name='occurrences__start')
     category = ModelMultipleChoiceFilter(
         field_name='categories__name',
         to_field_name='name',
