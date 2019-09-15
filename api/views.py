@@ -1,5 +1,4 @@
 import datetime
-import json
 
 from rest_framework.views import APIView
 from rest_framework import viewsets, status
@@ -99,9 +98,9 @@ class MapsView(APIView):
     def get(self, request, *args, **kwargs):
         q = request.GET.get('q')
         try:
-            q = 'POINT({})'.format(q.replace(',',' '))
+            q = 'POINT({})'.format(q.replace(',', ' '))
             queryset = Winery.get_nearly_wineries(q)
             serializer = WinerySerializer(queryset, many=True)
             return Response(serializer.data)
         except Exception:
-            return Response({'errors': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'errors': 'Invalid Request.'}, status=status.HTTP_400_BAD_REQUEST)
