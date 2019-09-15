@@ -102,6 +102,30 @@ class EventSerializer(serializers.ModelSerializer):
 
         return event
 
+    def validate_categories(self, categories):
+        """
+        Check that the categories are valid
+        """
+        for category in categories:
+            try:
+                EventCategory.objects.get(name=category['name'])
+            except Exception:
+                raise serializers.ValidationError("category {} does not exist".format(category['name']))
+
+        return categories
+
+    def validate_tags(self, tags):
+        """
+        Check that the tags are valid
+        """
+        for tag in tags:
+            try:
+                Tag.objects.get(name=tag['name'])
+            except Exception:
+                raise serializers.ValidationError("tag {} does not exist".format(tag['name']))
+
+        return tags
+
 
 class WinerySerializer(serializers.ModelSerializer):
     """Serializes a winery for the api endpoint"""

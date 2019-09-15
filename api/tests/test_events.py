@@ -376,3 +376,29 @@ class TestEvents(TestCase):
         self.assertEqual(db_event.name, data["name"])
         tag_list = [tag.name for tag in db_event.tags.all()]
         self.assertEqual(set(tag_list), set(['test tag', 'other tag']))
+
+    def test_event_creation_with_invalid_tag(self):
+        data = self.valid_data['one_schedule_no_to_date']
+        tag1 = Tag.objects.create(name='test tag')
+        data['tags'] = [
+            {
+                "name": tag1.name
+            },
+            {
+                "name": "bad_tag_name"
+            }
+        ]
+        serializer = EventSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors.keys()), set(['tags']))
+
+    def test_event_creation_with_invalid_category(self):
+        data = self.valid_data['one_schedule_no_to_date']
+        data['categories'] = [
+            {
+                "name": "bad_category_name"
+            }
+        ]
+        serializer = EventSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors.keys()), set(['categories']))
