@@ -343,6 +343,49 @@ class TestEvents(TestCase):
         # Check that unwanted event is not in response data
         self.assertNotIn(serializer3.data, res.data)
 
+    def test_filter_events_multiple_tags(self):
+        """Test returning events with tags specified"""
+
+        event1 = Event.objects.create(name='Wanted Event', description='Should be showed', winery=self.winery)
+        event2 = Event.objects.create(name='Also Wanted', description='Should be showed', winery=self.winery)
+        event3 = Event.objects.create(name='Unwanted', description='Shouldnt be showed', winery=self.winery)
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event1
+        )
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event2
+        )
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event3
+        )
+        # Wanted Event tags
+        event1.tags.add(Tag.objects.create(name='tag1'))
+        event1.tags.add(Tag.objects.create(name='tag3'))
+        event2.tags.add(Tag.objects.create(name='tag2'))
+        # Unwanted Event tag)
+        event3.tags.add(Tag.objects.create(name='tag3'))
+
+        res = self.client.get(
+            '/api/events/?tag=tag1&tag=tag2'  # looks for events with any of this tags
+        )
+        serializer1 = EventSerializer(event1)
+        serializer2 = EventSerializer(event2)
+        serializer3 = EventSerializer(event3)
+        # Check that wanted events are in the response
+        self.assertIn(serializer1.data, res.data)
+        self.assertIn(serializer2.data, res.data)
+        # Check that unwanted event is not in response data
+        self.assertNotIn(serializer3.data, res.data)
+
     def test_invalid_schedule(self):
         data = self.invalid_data['empty_schedule']
         serializer = EventSerializer(data=data)
