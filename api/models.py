@@ -7,6 +7,13 @@ from django.contrib.gis.measure import Distance
 from . import VARIETALS
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=15)
+
+    def __str__(self):
+        return self.name
+
+
 class Winery(models.Model):
     """Model for winery"""
 
@@ -77,6 +84,7 @@ class Event(models.Model):
     cancelled = models.DateTimeField(null=True, blank=True)
     winery = models.ForeignKey(Winery, on_delete=models.PROTECT)
     categories = models.ManyToManyField(EventCategory)
+    tags = models.ManyToManyField(Tag, blank=True)
 
     @staticmethod
     def calculate_dates_in_threshold(start, end, weekdays):
