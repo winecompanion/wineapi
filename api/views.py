@@ -28,10 +28,15 @@ class EventFilter(FilterSet):
         to_field_name='name',
         queryset=EventCategory.objects.all()
     )
+    tag = ModelMultipleChoiceFilter(
+        field_name='tags__name',
+        to_field_name='name',
+        queryset=Tag.objects.all()
+    )
 
     class Meta:
         model = Event
-        fields = ['occurrences__start', 'category']
+        fields = ['occurrences__start', 'category', 'tag']
 
 
 class EventsView(viewsets.ModelViewSet):
