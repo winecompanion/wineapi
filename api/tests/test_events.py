@@ -110,6 +110,7 @@ class TestEvents(TestCase):
             },
         }
 
+        self.event_required_fields = ['name', 'description', 'winery', 'categories', 'schedule', 'vacancies']
         self.client = Client()
 
     def test_dates_between_threshold(self):
@@ -152,7 +153,7 @@ class TestEvents(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             set(response.data['errors'].keys()),
-            set(['name', 'description', 'winery', 'categories', 'schedule', 'vacancies'])
+            set(self.event_required_fields)
         )
 
     def test_event_endpoint_get(self):

@@ -31,6 +31,7 @@ class EventCategorySerializer(serializers.Serializer):
 
 
 class EventSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField()
     vacancies = serializers.IntegerField(write_only=True)
     schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
     categories = EventCategorySerializer(many=True)
@@ -88,23 +89,29 @@ class EventSerializer(serializers.ModelSerializer):
 
 class WinerySerializer(serializers.ModelSerializer):
     """Serializes a winery for the api endpoint"""
+    id = serializers.ReadOnlyField()
+
     class Meta:
         model = Winery
-        fields = ('name', 'description', 'website', 'available_since', 'location')
+        fields = ('id', 'name', 'description', 'website', 'available_since', 'location')
 
 
 class WineLineSerializer(serializers.ModelSerializer):
     """Serializes a wine line for the api endpoint"""
+    id = serializers.ReadOnlyField()
+
     class Meta:
         model = WineLine
-        fields = ('name', 'description', 'winery')
+        fields = ('id', 'name', 'description', 'winery')
 
 
 class WineSerializer(serializers.ModelSerializer):
     """Serializes wines for the api endpoint"""
+    id = serializers.ReadOnlyField()
+
     class Meta:
         model = Wine
-        fields = ('name', 'description', 'winery', 'varietal', 'wine_line')
+        fields = ('id', 'name', 'description', 'winery', 'varietal', 'wine_line')
 
 
 class MapsSerializer(serializers.Serializer):
