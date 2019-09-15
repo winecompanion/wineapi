@@ -63,9 +63,11 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializes a user for the api endpoint"""
+    id = serializers.ReadOnlyField()
+
     class Meta:
         model = WineUser
-        fields = ('email', 'password', 'first_name', 'last_name', 'birth_date')
+        fields = ('id', 'email', 'password', 'first_name', 'last_name', 'birth_date')
         extra_kwargs = {
             'password': {
                 'write_only': True,
