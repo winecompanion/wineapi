@@ -62,6 +62,13 @@ class Wine(models.Model):
         return self.name
 
 
+class EventCategory(models.Model):
+    name = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.name
+
+
 class Event(models.Model):
     """"Model for Events"""
 
@@ -69,6 +76,7 @@ class Event(models.Model):
     description = models.TextField()
     cancelled = models.DateTimeField(null=True, blank=True)
     winery = models.ForeignKey(Winery, on_delete=models.PROTECT)
+    categories = models.ManyToManyField(EventCategory)
 
     @staticmethod
     def calculate_dates_in_threshold(start, end, weekdays):

@@ -2,7 +2,7 @@ import datetime
 from parameterized import parameterized
 from django.test import Client, TestCase
 from django.urls import reverse
-from api.models import Event, EventOccurrence, Winery
+from api.models import Event, EventOccurrence, Winery, EventCategory
 from api.serializers import EventSerializer
 
 
@@ -16,12 +16,21 @@ class TestEvents(TestCase):
                 description='Hola',
                 website='hola.com',
         )
+        self.category1 = EventCategory.objects.create(name="Tour")
+        self.category2 = EventCategory.objects.create(name="Food")
+        self.category3 = EventCategory.objects.create(name="Wine tasting")
         self.valid_data = {
             "one_schedule_no_to_date": {
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
                 "winery": self.winery.id,
+                "categories": [
+                    {
+                        "id": self.category1.id,
+                        "name": self.category1.name,
+                    },
+                ],
                 "schedule": [
                     {
                         "from_date": "2019-08-28",
@@ -37,6 +46,12 @@ class TestEvents(TestCase):
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
                 "winery": self.winery.id,
+                "categories": [
+                    {
+                        "id": self.category1.id,
+                        "name": self.category1.name
+                    },
+                ],
                 "schedule": [
                     {
                         "from_date": "2019-08-28",
@@ -52,6 +67,20 @@ class TestEvents(TestCase):
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
                 "winery": self.winery.id,
+                "categories": [
+                    {
+                        "id": self.category1.id,
+                        "name": self.category1.name
+                    },
+                    {
+                        "id": self.category2.id,
+                        "name": self.category2.name
+                    },
+                    {
+                        "id": self.category3.id,
+                        "name": self.category3.name
+                    },
+                ],
                 "schedule": [
                     {
                         "from_date": "2019-08-28",
@@ -123,7 +152,7 @@ class TestEvents(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             set(response.data['errors'].keys()),
-            set(['name', 'description', 'winery', 'schedule', 'vacancies'])
+            set(['name', 'description', 'winery', 'categories', 'schedule', 'vacancies'])
         )
 
     def test_event_endpoint_get(self):
