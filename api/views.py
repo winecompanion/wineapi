@@ -10,6 +10,7 @@ from django_filters import FilterSet, DateTimeFromToRangeFilter, ModelMultipleCh
 from .models import Event, Winery, WineLine, Wine, EventCategory, Tag
 from .serializers import (
     EventSerializer,
+    EventCategorySerializer,
     WinerySerializer,
     WineLineSerializer,
     WineSerializer,
@@ -119,4 +120,19 @@ class TagView(viewsets.ModelViewSet):
         tag = serializer.create(serializer.validated_data)
         return Response(
             {'url': reverse('tags-detail', args=[tag.id])},
+            status=status.HTTP_201_CREATED)
+
+
+class EventCategoryView(viewsets.ModelViewSet):
+    queryset = EventCategory.objects.all()
+    serializer_class = EventCategorySerializer
+    model_class = EventCategory
+
+    def create(self, request):
+        serializer = EventCategorySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        event_category = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('event-categories-detail', args=[event_category.id])},
             status=status.HTTP_201_CREATED)
