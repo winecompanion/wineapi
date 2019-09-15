@@ -152,7 +152,3 @@ class WineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wine
         fields = ('id', 'name', 'description', 'winery', 'varietal', 'wine_line')
-
-
-class MapsSerializer(serializers.Serializer):
-    location = serializers.CharField()
