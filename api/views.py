@@ -1,5 +1,7 @@
 import datetime
+import json
 
+from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
@@ -13,7 +15,6 @@ from .serializers import (
     WinerySerializer,
     WineLineSerializer,
     WineSerializer,
-    MapsSerializer,
 )
 
 
@@ -94,13 +95,13 @@ class WineLineView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED)
 
 
-class MapsView(viewsets.ViewSet):
-    def create(self, request):
-        serializer = MapsSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        if serializer.data['location']:
-            location = serializer.data['location']
-            queryset = Winery.get_nearly_wineries(location)
+class MapsView(APIView):
+    def get(self, request, *args, **kwargs):
+        q = request.GET.get('q')
+        try:
+            q = 'POINT({})'.format(q.replace(',',' '))
+            queryset = Winery.get_nearly_wineries(q)
             serializer = WinerySerializer(queryset, many=True)
             return Response(serializer.data)
+        except Exception:
+            return Response({'errors': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
