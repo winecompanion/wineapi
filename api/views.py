@@ -110,6 +110,7 @@ class MapsView(viewsets.ViewSet):
 class TagView(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    model_class = Tag
 
     def create(self, request):
         serializer = TagSerializer(data=request.data)
@@ -117,5 +118,5 @@ class TagView(viewsets.ModelViewSet):
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         tag = serializer.create(serializer.validated_data)
         return Response(
-            {'url': reverse('wine-line-detail', args=[tag.id])},
+            {'url': reverse('tags-detail', args=[tag.id])},
             status=status.HTTP_201_CREATED)

@@ -84,6 +84,7 @@ class Event(models.Model):
     cancelled = models.DateTimeField(null=True, blank=True)
     winery = models.ForeignKey(Winery, on_delete=models.PROTECT)
     categories = models.ManyToManyField(EventCategory)
+    tags = models.ManyToManyField(Tag, blank=True)
 
     @staticmethod
     def calculate_dates_in_threshold(start, end, weekdays):

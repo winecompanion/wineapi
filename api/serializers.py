@@ -7,6 +7,7 @@ from .models import (
     WineLine,
     Wine,
     EventCategory,
+    Tag,
 )
 
 
@@ -20,23 +21,22 @@ class ScheduleSerializer(serializers.Serializer):
         child=serializers.IntegerField())
 
 
-class EventCategorySerializer(serializers.Serializer):
+class EventCategorySerializer(serializers.ModelSerializer):
     """Serializer for event categories"""
-    id = serializers.IntegerField()
-    name = serializers.CharField()
+    id = serializers.ReadOnlyField()
 
     class Meta:
-        # model = EventCategory
+        model = EventCategory
         fields = ('id', 'name')
 
 
-class TagSerializer(serializers.Serializer):
+class TagSerializer(serializers.ModelSerializer):
     """Serializer for info Tags"""
-    id = serializers.IntegerField()
-    name = serializers.CharField()
+    id = serializers.ReadOnlyField
 
     class Meta:
-        fields = ('id', 'name')
+        model = Tag
+        fields = ['id', 'name']
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -44,10 +44,11 @@ class EventSerializer(serializers.ModelSerializer):
     vacancies = serializers.IntegerField(write_only=True)
     schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
     categories = EventCategorySerializer(many=True)
+    tags = TagSerializer(many=True, required=False)
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'description', 'cancelled',  'winery', 'categories', 'vacancies', 'schedule']
+        fields = ['id', 'name', 'description', 'cancelled',  'winery', 'categories', 'tags', 'vacancies', 'schedule']
 
     def create(self, data):
         # TODO: finish docstring
@@ -59,6 +60,8 @@ class EventSerializer(serializers.ModelSerializer):
         schedule = data.pop('schedule')
         vacancies = data.pop('vacancies')
         categories = data.pop('categories')
+        tags = data.pop('tags') if 'tags' in data else []
+
         event = Event.objects.create(**data)
 
         for elem in schedule:
@@ -92,7 +95,11 @@ class EventSerializer(serializers.ModelSerializer):
                     event=event
                 )
         for category in categories:
-            event.categories.add(EventCategory.objects.get(pk=category['id']))
+            event.categories.add(EventCategory.objects.get(name=category['name']))
+
+        for tag in tags:
+            event.tags.add(Tag.objects.get(name=tag['name']))
+
         return event
 
 

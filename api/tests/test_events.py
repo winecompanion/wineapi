@@ -1,8 +1,12 @@
 import datetime
-from parameterized import parameterized
+
 from django.test import Client, TestCase
 from django.urls import reverse
-from api.models import Event, EventOccurrence, Winery, EventCategory
+from rest_framework import status
+
+from parameterized import parameterized
+
+from api.models import Event, EventOccurrence, Winery, EventCategory, Tag
 from api.serializers import EventSerializer
 
 
@@ -27,8 +31,7 @@ class TestEvents(TestCase):
                 "winery": self.winery.id,
                 "categories": [
                     {
-                        "id": self.category1.id,
-                        "name": self.category1.name,
+                        "name": self.category1.name
                     },
                 ],
                 "schedule": [
@@ -48,7 +51,6 @@ class TestEvents(TestCase):
                 "winery": self.winery.id,
                 "categories": [
                     {
-                        "id": self.category1.id,
                         "name": self.category1.name
                     },
                 ],
@@ -69,15 +71,12 @@ class TestEvents(TestCase):
                 "winery": self.winery.id,
                 "categories": [
                     {
-                        "id": self.category1.id,
                         "name": self.category1.name
                     },
                     {
-                        "id": self.category2.id,
                         "name": self.category2.name
                     },
                     {
-                        "id": self.category3.id,
                         "name": self.category3.name
                     },
                 ],
@@ -140,7 +139,7 @@ class TestEvents(TestCase):
         response = self.client.post(
             reverse("event-list"), data=data, content_type="application/json"
         )
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(set(response.json().keys()), set(["url"]))
 
         db_event = Event.objects.first()
@@ -150,7 +149,7 @@ class TestEvents(TestCase):
     def test_invalid_event_creation(self):
         data = {}
         response = self.client.post(reverse('event-list'), data=data, content_type='application/json')
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             set(response.data['errors'].keys()),
             set(self.event_required_fields)
@@ -351,4 +350,29 @@ class TestEvents(TestCase):
         response = self.client.post(
             reverse("event-list"), data=data, content_type="application/json"
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_event_creation_with_tags(self):
+        data = self.valid_data['one_schedule_no_to_date']
+        tag1 = Tag.objects.create(name='test tag')
+        tag2 = Tag.objects.create(name='other tag')
+        data['tags'] = [
+            {
+                "name": tag1.name
+            },
+            {
+                "name": tag2.name
+            }
+        ]
+        serializer = EventSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        response = self.client.post(
+            reverse("event-list"), data=data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(set(response.json().keys()), set(["url"]))
+
+        db_event = Event.objects.first()
+        self.assertEqual(db_event.name, data["name"])
+        tag_list = [tag.name for tag in db_event.tags.all()]
+        self.assertEqual(set(tag_list), set(['test tag', 'other tag']))
