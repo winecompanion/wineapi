@@ -7,6 +7,13 @@ from django.contrib.gis.measure import Distance
 from . import VARIETALS
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=15)
+
+    def __str__(self):
+        return self.name
+
+
 class Winery(models.Model):
     """Model for winery"""
 

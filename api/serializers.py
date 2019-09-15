@@ -30,6 +30,15 @@ class EventCategorySerializer(serializers.Serializer):
         fields = ('id', 'name')
 
 
+class TagSerializer(serializers.Serializer):
+    """Serializer for info Tags"""
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
+    class Meta:
+        fields = ('id', 'name')
+
+
 class EventSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     vacancies = serializers.IntegerField(write_only=True)
