@@ -8,6 +8,7 @@ from .models import (
     Wine,
     EventCategory,
     Tag,
+    Reservation,
 )
 
 
@@ -39,16 +40,38 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 
+class VenueSerializer(serializers.ModelSerializer):
+    """Serializer for event occurrences """
+    id = serializers.ReadOnlyField()
+
+    class Meta:
+        model = EventOccurrence
+        fields = ('id', 'start', 'end', 'vacancies')
+
+
 class EventSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     vacancies = serializers.IntegerField(write_only=True)
     schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
     categories = EventCategorySerializer(many=True)
     tags = TagSerializer(many=True, required=False)
+    occurrences = VenueSerializer(many=True, read_only=True)
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'description', 'cancelled',  'winery', 'categories', 'tags', 'vacancies', 'schedule']
+        fields = [
+            'id',
+            'name',
+            'description',
+            'cancelled',
+            'winery',
+            'price',
+            'categories',
+            'tags',
+            'vacancies',
+            'schedule',
+            'occurrences',
+        ]
 
     def create(self, data):
         # TODO: finish docstring
@@ -152,3 +175,46 @@ class WineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wine
         fields = ('id', 'name', 'description', 'winery', 'varietal', 'wine_line')
+
+
+class EventBriefSerializer(serializers.ModelSerializer):
+    """Serializer for event with rediced infromation only for reading purposes"""
+    id = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField()
+    winery = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = Event
+        fields = ('id', 'name', 'winery')
+
+
+class EventOccurrenceSerializer(serializers.ModelSerializer):
+    """Serializer for event occurrences """
+    id = serializers.ReadOnlyField()
+    event = EventBriefSerializer()
+
+    class Meta:
+        model = EventOccurrence
+        fields = ('id', 'start', 'end', 'vacancies', 'event')
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    """Seriazlizer for Reservation"""
+    id = serializers.ReadOnlyField()
+    created_on = serializers.ReadOnlyField()
+    date = EventOccurrenceSerializer(read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = (
+            'id',
+            'attendee_number',
+            'observations',
+            'created_on',
+            'ammount_payed',
+            'user',
+            'event_occurrence',
+            'date',
+        )
+
+    # todo: Validate ammount with event price

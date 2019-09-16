@@ -4,7 +4,6 @@ from django.contrib.auth.models import PermissionsMixin
 from rest_framework import serializers
 from django.utils import timezone
 from django.db import models
-from api.models import Winery
 
 
 class WineUserManager(BaseUserManager):
@@ -50,7 +49,6 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     birth_date = models.DateField(null=True, blank=True)
-    winery = models.ForeignKey(Winery, null=True, blank=True, on_delete=models.PROTECT)
 
     objects = WineUserManager()
 

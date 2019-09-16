@@ -8,7 +8,7 @@ from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import FilterSet, DateTimeFromToRangeFilter, ModelMultipleChoiceFilter
 
-from .models import Event, Winery, WineLine, Wine, EventCategory, Tag
+from .models import Event, Winery, WineLine, Wine, EventCategory, Tag, Reservation
 from .serializers import (
     EventSerializer,
     EventCategorySerializer,
@@ -16,6 +16,7 @@ from .serializers import (
     WineLineSerializer,
     WineSerializer,
     TagSerializer,
+    ReservationSerializer,
 )
 
 
@@ -140,4 +141,20 @@ class EventCategoryView(viewsets.ModelViewSet):
         event_category = serializer.create(serializer.validated_data)
         return Response(
             {'url': reverse('event-categories-detail', args=[event_category.id])},
+            status=status.HTTP_201_CREATED)
+
+
+class ReservationView(viewsets.ModelViewSet):
+    queryset = Reservation.objects.all()
+    serializer_class = ReservationSerializer
+    model_class = Reservation
+
+    # Todo: ver si puedo hacer que no le pase el usuario, sino que use el user logueado
+    def create(self, request):
+        serializer = ReservationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        reservation = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('reservations-detail', args=[reservation.id])},
             status=status.HTTP_201_CREATED)

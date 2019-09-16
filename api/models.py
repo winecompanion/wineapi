@@ -1,10 +1,14 @@
 import datetime
+from decimal import Decimal
 from django.db import models
 from django.contrib.gis.db.models import PointField
 from django.contrib.gis import geos
 from django.contrib.gis.measure import Distance
+from django.core.validators import MinValueValidator
+
 
 from . import VARIETALS
+from users.models import WineUser
 
 
 class Tag(models.Model):
@@ -85,6 +89,11 @@ class Event(models.Model):
     winery = models.ForeignKey(Winery, on_delete=models.PROTECT)
     categories = models.ManyToManyField(EventCategory)
     tags = models.ManyToManyField(Tag, blank=True)
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
 
     @staticmethod
     def calculate_dates_in_threshold(start, end, weekdays):
@@ -108,4 +117,21 @@ class EventOccurrence(models.Model):
     event = models.ForeignKey(
         Event,
         related_name='occurrences',
-        on_delete=models.CASCADE)
+        on_delete=models.CASCADE
+    )
+
+
+class Reservation(models.Model):
+    attendee_number = models.PositiveIntegerField()
+    created_on = models.DateTimeField(auto_now_add=True)
+    observations = models.TextField()
+    ammount_payed = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+    user = models.ForeignKey(WineUser, on_delete=models.PROTECT)
+    event_occurrence = models.ForeignKey(EventOccurrence, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return str(self.id) + ": " + self.user.name + ", " + str(self.ammount_payed)
