@@ -202,7 +202,6 @@ class ReservationSerializer(serializers.ModelSerializer):
     """Seriazlizer for Reservation"""
     id = serializers.ReadOnlyField()
     created_on = serializers.ReadOnlyField()
-    date = EventOccurrenceSerializer(read_only=True)
 
     class Meta:
         model = Reservation
@@ -214,7 +213,6 @@ class ReservationSerializer(serializers.ModelSerializer):
             'paid_ammount',
             'user',
             'event_occurrence',
-            'date',
         )
 
     def validate(self, data):
@@ -225,5 +223,14 @@ class ReservationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('The paid ammount is not valid')
         if data['event_occurrence'].vacancies < data['attendee_number']:
             raise serializers.ValidationError('Not enough vacancies for the reservation')
+        if data['event_occurrence'].start < datetime.datetime.now():
+            raise serializers.ValidationError('The date is no longer available')
+        if data['event_occurrence'].event.cancelled:
+            raise serializers.ValidationError('The event is cancelled')
 
         return data
+
+    # Override serialization of event_occurrence only when readed
+    def to_representation(self, obj):
+        self.fields['event_occurrence'] = EventOccurrenceSerializer()
+        return super().to_representation(obj)

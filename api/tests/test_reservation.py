@@ -1,11 +1,10 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from django.core.exceptions import ValidationError
 
 from rest_framework import status
 
 from api.models import Reservation, Event, EventOccurrence, Winery
-from api.serializers import ReservationSerializer, EventBriefSerializer, EventOccurrenceSerializer
+from api.serializers import ReservationSerializer
 
 from users.models import WineUser
 
@@ -89,6 +88,39 @@ class TestReservation(TestCase):
         serializer = ReservationSerializer(data=test_data)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors['non_field_errors']), set(['Not enough vacancies for the reservation']))
+
+    def test_invalid_reservation_old_occurrence(self):
+        occurrence = EventOccurrence.objects.create(
+            start='2018-10-31T20:00:00',
+            end='2018-10-31T23:00:00',
+            vacancies=50,
+            event=self.event
+        )
+        test_data = self.valid_reservation_json_data
+        test_data['event_occurrence'] = occurrence.id
+        serializer = ReservationSerializer(data=test_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors['non_field_errors']), set(['The date is no longer available']))
+
+    def test_invalid_reservation_event_cancelled(self):
+        cancelled_event = Event.objects.create(
+            name='Event Cancelled',
+            description='Shouldnt be able to make a reservation',
+            cancelled='2019-9-15T20:00:00',
+            winery=self.winery,
+            price=500.0,
+        )
+        occurrence = EventOccurrence.objects.create(
+            start='2030-10-31T20:00:00',
+            end='2030-10-31T23:00:00',
+            vacancies=50,
+            event=cancelled_event
+        )
+        test_data = self.valid_reservation_json_data
+        test_data['event_occurrence'] = occurrence.id
+        serializer = ReservationSerializer(data=test_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors['non_field_errors']), set(['The event is cancelled']))
 
     def test_reservation_endpoint_get(self):
         response = self.client.get(
