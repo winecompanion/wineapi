@@ -37,21 +37,21 @@ class TestReservation(TestCase):
         self.valid_creation_data = {
                 'attendee_number': 2,
                 'observations': 'No kids',
-                'ammount_payed': 1000.0,
+                'paid_ammount': 1000.0,
                 'user': self.user,
                 'event_occurrence': self.event_occ,
         }
         self.valid_reservation_json_data = {
                 'attendee_number': 2,
                 'observations': 'No kids',
-                'ammount_payed': 1000.0,
+                'paid_ammount': 1000.0,
                 'user': self.user.id,
                 'event_occurrence': self.event_occ.id,
         }
         self.invalid_reservation_data = {
                 'observations': 'observations',
         }
-        self.required_fields = set(['attendee_number', 'ammount_payed', 'user', 'event_occurrence'])
+        self.required_fields = set(['attendee_number', 'paid_ammount', 'user', 'event_occurrence'])
         self.client = Client()
 
     def test_reservation_creation(self):
@@ -67,13 +67,28 @@ class TestReservation(TestCase):
     def test_reservation_serializer(self):
         serializer = ReservationSerializer(data=self.valid_reservation_json_data)
         self.assertTrue(serializer.is_valid())
-        reservation_fields = ['attendee_number', 'observations', 'ammount_payed', 'user', 'event_occurrence']
+        reservation_fields = ['attendee_number', 'observations', 'paid_ammount', 'user', 'event_occurrence']
         self.assertEqual(set(serializer.data.keys()), set(reservation_fields))
 
     def test_invalid_reservation_serializer(self):
         serializer = ReservationSerializer(data=self.invalid_reservation_data)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors), self.required_fields)
+
+    def test_invalid_reservation_paid_ammount_serializer(self):
+        test_data = self.valid_reservation_json_data
+        test_data['paid_ammount'] = 1234.0  # not valid since it should be 2*500=1000
+        serializer = ReservationSerializer(data=test_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors['non_field_errors']), set(['The paid ammount is not valid']))
+
+    def test_invalid_reservation_not_enough_vacancies(self):
+        test_data = self.valid_reservation_json_data
+        test_data['paid_ammount'] = 25500.0
+        test_data['attendee_number'] = 51
+        serializer = ReservationSerializer(data=test_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors['non_field_errors']), set(['Not enough vacancies for the reservation']))
 
     def test_reservation_endpoint_get(self):
         response = self.client.get(
@@ -87,6 +102,16 @@ class TestReservation(TestCase):
             self.valid_reservation_json_data
         )
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+    def test_reservation_creation_vacancies_decrement(self):
+        previous_vacancies = self.event_occ.vacancies
+        self.client.post(
+            reverse('reservations-list'),
+            self.valid_reservation_json_data
+        )
+        self.event_occ.refresh_from_db()
+        new_vacancies = self.event_occ.vacancies
+        self.assertEqual(new_vacancies, previous_vacancies - self.valid_reservation_json_data['attendee_number'])
 
     def test_reservation_endpoint_create_with_invalid_data(self):
         response = self.client.post(

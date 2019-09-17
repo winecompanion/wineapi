@@ -318,19 +318,19 @@ class TestEvents(TestCase):
 
         event1 = Event.objects.create(
             name='Wanted Event',
-            description='Should be showed',
+            description='Should be shown',
             winery=self.winery,
             price=0.0
         )
         event2 = Event.objects.create(
             name='Also Wanted',
-            description='Should be showed',
+            description='Should be shown',
             winery=self.winery,
             price=0.0
         )
         event3 = Event.objects.create(
             name='Unwanted',
-            description='Shouldnt be showed',
+            description='Shouldnt be shown',
             winery=self.winery,
             price=0.0
         )
@@ -376,19 +376,19 @@ class TestEvents(TestCase):
 
         event1 = Event.objects.create(
             name='Wanted Event',
-            description='Should be showed',
+            description='Should be shown',
             winery=self.winery,
             price=0.0
         )
         event2 = Event.objects.create(
             name='Also Wanted',
-            description='Should be showed',
+            description='Should be shown',
             winery=self.winery,
             price=0.0
         )
         event3 = Event.objects.create(
             name='Unwanted',
-            description='Shouldnt be showed',
+            description='Shouldnt be shown',
             winery=self.winery,
             price=0.0
         )

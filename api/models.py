@@ -125,7 +125,7 @@ class Reservation(models.Model):
     attendee_number = models.PositiveIntegerField()
     created_on = models.DateTimeField(auto_now_add=True)
     observations = models.TextField()
-    ammount_payed = models.DecimalField(
+    paid_ammount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))]

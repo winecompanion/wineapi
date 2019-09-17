@@ -211,10 +211,19 @@ class ReservationSerializer(serializers.ModelSerializer):
             'attendee_number',
             'observations',
             'created_on',
-            'ammount_payed',
+            'paid_ammount',
             'user',
             'event_occurrence',
             'date',
         )
 
-    # todo: Validate ammount with event price
+    def validate(self, data):
+        """
+        Other validations
+        """
+        if data['event_occurrence'].event.price * data['attendee_number'] != data['paid_ammount']:
+            raise serializers.ValidationError('The paid ammount is not valid')
+        if data['event_occurrence'].vacancies < data['attendee_number']:
+            raise serializers.ValidationError('Not enough vacancies for the reservation')
+
+        return data
