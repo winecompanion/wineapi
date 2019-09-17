@@ -8,6 +8,7 @@ from .models import (
     Wine,
     EventCategory,
     Tag,
+    Reservation,
 )
 
 
@@ -39,16 +40,38 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 
+class VenueSerializer(serializers.ModelSerializer):
+    """Serializer for event occurrences """
+    id = serializers.ReadOnlyField()
+
+    class Meta:
+        model = EventOccurrence
+        fields = ('id', 'start', 'end', 'vacancies')
+
+
 class EventSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     vacancies = serializers.IntegerField(write_only=True)
     schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
     categories = EventCategorySerializer(many=True)
     tags = TagSerializer(many=True, required=False)
+    occurrences = VenueSerializer(many=True, read_only=True)
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'description', 'cancelled',  'winery', 'categories', 'tags', 'vacancies', 'schedule']
+        fields = [
+            'id',
+            'name',
+            'description',
+            'cancelled',
+            'winery',
+            'price',
+            'categories',
+            'tags',
+            'vacancies',
+            'schedule',
+            'occurrences',
+        ]
 
     def create(self, data):
         # TODO: finish docstring
@@ -126,6 +149,10 @@ class EventSerializer(serializers.ModelSerializer):
 
         return tags
 
+    def to_representation(self, obj):
+        self.fields['winery'] = serializers.SlugRelatedField(read_only=True, slug_field='name')
+        return super().to_representation(obj)
+
 
 class WinerySerializer(serializers.ModelSerializer):
     """Serializes a winery for the api endpoint"""
@@ -152,3 +179,62 @@ class WineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wine
         fields = ('id', 'name', 'description', 'winery', 'varietal', 'wine_line')
+
+
+class EventBriefSerializer(serializers.ModelSerializer):
+    """Serializer for event with rediced infromation only for reading purposes"""
+    id = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField()
+    winery = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = Event
+        fields = ('id', 'name', 'winery')
+
+
+class EventOccurrenceSerializer(serializers.ModelSerializer):
+    """Serializer for event occurrences """
+    id = serializers.ReadOnlyField()
+    event = EventBriefSerializer()
+
+    class Meta:
+        model = EventOccurrence
+        fields = ('id', 'start', 'end', 'vacancies', 'event')
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    """Seriazlizer for Reservation"""
+    id = serializers.ReadOnlyField()
+    created_on = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Reservation
+        fields = (
+            'id',
+            'attendee_number',
+            'observations',
+            'created_on',
+            'paid_amount',
+            'user',
+            'event_occurrence',
+        )
+
+    def validate(self, data):
+        """
+        Other validations
+        """
+        if data['event_occurrence'].event.price * data['attendee_number'] != data['paid_amount']:
+            raise serializers.ValidationError('The paid amount is not valid')
+        if data['event_occurrence'].vacancies < data['attendee_number']:
+            raise serializers.ValidationError('Not enough vacancies for the reservation')
+        if data['event_occurrence'].start < datetime.datetime.now():
+            raise serializers.ValidationError('The date is no longer available')
+        if data['event_occurrence'].event.cancelled:
+            raise serializers.ValidationError('The event is cancelled')
+
+        return data
+
+    # Override serialization of event_occurrence only when readed
+    def to_representation(self, obj):
+        self.fields['event_occurrence'] = EventOccurrenceSerializer()
+        return super().to_representation(obj)

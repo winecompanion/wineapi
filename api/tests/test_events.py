@@ -29,6 +29,7 @@ class TestEvents(TestCase):
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
                 "winery": self.winery.id,
+                "price": 500.0,
                 "categories": [
                     {
                         "name": self.category1.name
@@ -49,6 +50,7 @@ class TestEvents(TestCase):
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
                 "winery": self.winery.id,
+                "price": 500.0,
                 "categories": [
                     {
                         "name": self.category1.name
@@ -69,6 +71,7 @@ class TestEvents(TestCase):
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
                 "winery": self.winery.id,
+                "price": 0.0,
                 "categories": [
                     {
                         "name": self.category1.name
@@ -109,7 +112,7 @@ class TestEvents(TestCase):
             },
         }
 
-        self.event_required_fields = ['name', 'description', 'winery', 'categories', 'schedule', 'vacancies']
+        self.event_required_fields = ['name', 'description', 'winery', 'price', 'categories', 'schedule', 'vacancies']
         self.client = Client()
 
     def test_dates_between_threshold(self):
@@ -163,8 +166,8 @@ class TestEvents(TestCase):
 
     def test_filter_event_by_date(self):
         """Test returning events with future occurrencies"""
-        event1 = Event.objects.create(name='Evento 1', description='Desc 1', winery=self.winery)
-        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery)
+        event1 = Event.objects.create(name='Evento 1', description='Desc 1', winery=self.winery, price=0.0)
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery, price=0.0)
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
@@ -187,8 +190,8 @@ class TestEvents(TestCase):
 
     def test_search_event_by_name(self):
         """Test returning events that match a name"""
-        event1 = Event.objects.create(name='Event buscado', description='Desc 1', winery=self.winery)
-        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery)
+        event1 = Event.objects.create(name='Event buscado', description='Desc 1', winery=self.winery, price=0.0)
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery, price=0.0)
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
@@ -214,8 +217,8 @@ class TestEvents(TestCase):
     def test_filter_events_before_date(self):
         """Test returning events with a date no superior than the specified"""
 
-        event1 = Event.objects.create(name='Event buscado', description='Desc 1', winery=self.winery)
-        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery)
+        event1 = Event.objects.create(name='Event buscado', description='Desc 1', winery=self.winery, price=0.0)
+        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery, price=0.0)
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
@@ -240,9 +243,9 @@ class TestEvents(TestCase):
     def test_filter_events_in_date_range(self):
         """Test returning events with a date no superior than the specified"""
 
-        event1 = Event.objects.create(name='First Event', description='Desc 1', winery=self.winery)
-        event2 = Event.objects.create(name='Second Event', description='Desc 2', winery=self.winery)
-        event3 = Event.objects.create(name='Third Event', description='Desc 3', winery=self.winery)
+        event1 = Event.objects.create(name='First Event', description='Desc 1', winery=self.winery, price=0.0)
+        event2 = Event.objects.create(name='Second Event', description='Desc 2', winery=self.winery, price=0.0)
+        event3 = Event.objects.create(name='Third Event', description='Desc 3', winery=self.winery, price=0.0)
         EventOccurrence.objects.create(
             start='2034-10-31T20:00:00',
             end='2034-10-31T23:00:00',
@@ -276,8 +279,18 @@ class TestEvents(TestCase):
     def test_filter_events_categories(self):
         """Test returning events with category specified"""
 
-        event1 = Event.objects.create(name='Event buscado', description='Desc 1', winery=self.winery)
-        event2 = Event.objects.create(name='Evento 2', description='Desc 2', winery=self.winery)
+        event1 = Event.objects.create(
+            name='Event buscado',
+            description='Desc 1',
+            winery=self.winery,
+            price=0.0
+        )
+        event2 = Event.objects.create(
+            name='Evento 2',
+            description='Desc 2',
+            winery=self.winery,
+            price=0.0
+        )
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
@@ -303,9 +316,24 @@ class TestEvents(TestCase):
     def test_filter_events_multiple_categories(self):
         """Test returning events with category specified"""
 
-        event1 = Event.objects.create(name='Wanted Event', description='Should be showed', winery=self.winery)
-        event2 = Event.objects.create(name='Also Wanted', description='Should be showed', winery=self.winery)
-        event3 = Event.objects.create(name='Unwanted', description='Shouldnt be showed', winery=self.winery)
+        event1 = Event.objects.create(
+            name='Wanted Event',
+            description='Should be shown',
+            winery=self.winery,
+            price=0.0
+        )
+        event2 = Event.objects.create(
+            name='Also Wanted',
+            description='Should be shown',
+            winery=self.winery,
+            price=0.0
+        )
+        event3 = Event.objects.create(
+            name='Unwanted',
+            description='Shouldnt be shown',
+            winery=self.winery,
+            price=0.0
+        )
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
@@ -346,9 +374,24 @@ class TestEvents(TestCase):
     def test_filter_events_multiple_tags(self):
         """Test returning events with tags specified"""
 
-        event1 = Event.objects.create(name='Wanted Event', description='Should be showed', winery=self.winery)
-        event2 = Event.objects.create(name='Also Wanted', description='Should be showed', winery=self.winery)
-        event3 = Event.objects.create(name='Unwanted', description='Shouldnt be showed', winery=self.winery)
+        event1 = Event.objects.create(
+            name='Wanted Event',
+            description='Should be shown',
+            winery=self.winery,
+            price=0.0
+        )
+        event2 = Event.objects.create(
+            name='Also Wanted',
+            description='Should be shown',
+            winery=self.winery,
+            price=0.0
+        )
+        event3 = Event.objects.create(
+            name='Unwanted',
+            description='Shouldnt be shown',
+            winery=self.winery,
+            price=0.0
+        )
         EventOccurrence.objects.create(
             start='2036-10-31T20:00:00',
             end='2036-10-31T23:00:00',
