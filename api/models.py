@@ -19,7 +19,7 @@ class Winery(models.Model):
 
     name = models.CharField(max_length=30)
     description = models.TextField()
-    website = models.CharField(max_length=40)
+    website = models.CharField(max_length=40, null=True, blank=True)
     available_since = models.DateTimeField(null=True, blank=True)
     location = PointField(u"longitude/latitude", geography=True, blank=True, null=True)
 
