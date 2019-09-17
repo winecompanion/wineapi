@@ -149,6 +149,10 @@ class EventSerializer(serializers.ModelSerializer):
 
         return tags
 
+    def to_representation(self, obj):
+        self.fields['winery'] = serializers.SlugRelatedField(read_only=True, slug_field='name')
+        return super().to_representation(obj)
+
 
 class WinerySerializer(serializers.ModelSerializer):
     """Serializes a winery for the api endpoint"""
@@ -210,7 +214,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             'attendee_number',
             'observations',
             'created_on',
-            'paid_ammount',
+            'paid_amount',
             'user',
             'event_occurrence',
         )
@@ -219,8 +223,8 @@ class ReservationSerializer(serializers.ModelSerializer):
         """
         Other validations
         """
-        if data['event_occurrence'].event.price * data['attendee_number'] != data['paid_ammount']:
-            raise serializers.ValidationError('The paid ammount is not valid')
+        if data['event_occurrence'].event.price * data['attendee_number'] != data['paid_amount']:
+            raise serializers.ValidationError('The paid amount is not valid')
         if data['event_occurrence'].vacancies < data['attendee_number']:
             raise serializers.ValidationError('Not enough vacancies for the reservation')
         if data['event_occurrence'].start < datetime.datetime.now():
