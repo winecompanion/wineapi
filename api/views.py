@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from rest_framework.views import APIView
 from rest_framework import status, viewsets
@@ -50,7 +50,7 @@ class EventFilter(FilterSet):
 
 
 class EventsView(viewsets.ModelViewSet):
-    queryset = Event.objects.filter(occurrences__start__gt=datetime.datetime.now())
+    queryset = Event.objects.filter(occurrences__start__gt=datetime.now()).distinct()
     serializer_class = EventSerializer
 
     # search elements (must use search= as query params)
