@@ -38,11 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
+    'corsheaders',
     'rest_framework',
     'rest_framework_gis',
-
     'rest_framework_swagger',
-
     'users',
     'api',
 ]
@@ -55,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'winecompanion.urls'
@@ -128,3 +128,5 @@ USE_TZ = False
 STATIC_URL = '/static/'
 
 AUTH_USER_MODEL = 'users.WineUser'
+
+CORS_ORIGIN_ALLOW_ALL = True
