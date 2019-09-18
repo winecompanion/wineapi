@@ -35,9 +35,9 @@ class Winery(models.Model):
         return self.name
 
     @staticmethod
-    def get_nearly_wineries(location):
+    def get_nearly_wineries(location, ratio):
         current_point = geos.fromstr(location)
-        distance_from_point = {'km': 100}
+        distance_from_point = {'km': ratio}
         distance = Distance(**distance_from_point)
         wineries = Winery.objects.filter(location__distance_lt=(current_point, distance), location__isnull=False)
         return wineries

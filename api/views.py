@@ -114,9 +114,12 @@ class WineLineView(viewsets.ModelViewSet):
 class MapsView(APIView):
     def get(self, request, *args, **kwargs):
         q = request.GET.get('q')
+        r = request.GET.get('r')
+        if r is None:
+            r = 100
         try:
             q = 'POINT({})'.format(q.replace(',', ' '))
-            queryset = Winery.get_nearly_wineries(q)
+            queryset = Winery.get_nearly_wineries(q, r)
             serializer = WinerySerializer(queryset, many=True)
             return Response(serializer.data)
         except Exception:
