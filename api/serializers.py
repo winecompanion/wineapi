@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+
 from rest_framework import serializers
 from .models import (
     Event,
@@ -55,7 +56,7 @@ class EventSerializer(serializers.ModelSerializer):
     schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
     categories = EventCategorySerializer(many=True)
     tags = TagSerializer(many=True, required=False)
-    occurrences = VenueSerializer(many=True, read_only=True)
+    occurrences = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Event
@@ -96,14 +97,14 @@ class EventSerializer(serializers.ModelSerializer):
                     elem['weekdays'])
 
             for date in dates:
-                start = datetime.datetime(
+                start = datetime(
                     date.year,
                     date.month,
                     date.day,
                     start_time.hour,
                     start_time.minute,
                 )
-                end = datetime.datetime(
+                end = datetime(
                     date.year,
                     date.month,
                     date.day,
@@ -148,6 +149,11 @@ class EventSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("tag {} does not exist".format(tag['name']))
 
         return tags
+
+    def get_occurrences(self, event):
+        occurrences = EventOccurrence.objects.filter(event=event, start__gt=datetime.now())
+        serializer = VenueSerializer(instance=occurrences, many=True)
+        return serializer.data
 
     def to_representation(self, obj):
         self.fields['winery'] = serializers.SlugRelatedField(read_only=True, slug_field='name')
@@ -227,7 +233,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('The paid amount is not valid')
         if data['event_occurrence'].vacancies < data['attendee_number']:
             raise serializers.ValidationError('Not enough vacancies for the reservation')
-        if data['event_occurrence'].start < datetime.datetime.now():
+        if data['event_occurrence'].start < datetime.now():
             raise serializers.ValidationError('The date is no longer available')
         if data['event_occurrence'].event.cancelled:
             raise serializers.ValidationError('The event is cancelled')

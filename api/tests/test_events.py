@@ -1,4 +1,4 @@
-import datetime
+from datetime import date, datetime
 
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -116,16 +116,16 @@ class TestEvents(TestCase):
         self.client = Client()
 
     def test_dates_between_threshold(self):
-        start = datetime.date(2019, 8, 18)
-        end = datetime.date(2019, 8, 31)
+        start = date(2019, 8, 18)
+        end = date(2019, 8, 31)
         weekdays = [MONDAY, WEDNESDAY, FRIDAY]
         expected = [
-            datetime.date(2019, 8, 19),
-            datetime.date(2019, 8, 21),
-            datetime.date(2019, 8, 23),
-            datetime.date(2019, 8, 26),
-            datetime.date(2019, 8, 28),
-            datetime.date(2019, 8, 30),
+            date(2019, 8, 19),
+            date(2019, 8, 21),
+            date(2019, 8, 23),
+            date(2019, 8, 26),
+            date(2019, 8, 28),
+            date(2019, 8, 30),
         ]
         result = Event.calculate_dates_in_threshold(start, end, weekdays)
         self.assertEqual(result, expected)
@@ -488,3 +488,28 @@ class TestEvents(TestCase):
         serializer = EventSerializer(data=data)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors.keys()), set(['categories']))
+
+    def test_only_show_future_occurrences_of_event(self):
+        """Test returning events with only future occurrencies"""
+        event = Event.objects.create(name='Evento 1', description='Desc 1', winery=self.winery, price=0.0)
+        EventOccurrence.objects.create(
+            start='2018-10-31T20:00:00',
+            end='2018-10-31T23:00:00',
+            vacancies=50,
+            event=event
+        )
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event
+        )
+        res = self.client.get(
+            reverse("event-detail", kwargs={'pk': event.id})
+        )
+        self.assertTrue(
+            all(
+                [datetime.strptime(occurrence['start'], "%Y-%m-%dT%H:%M:%S") > datetime.now()
+                    for occurrence in res.data['occurrences']]
+            )
+        )
