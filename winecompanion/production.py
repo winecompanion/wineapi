@@ -135,3 +135,6 @@ STATIC_URL = '/static/'
 AUTH_USER_MODEL = 'users.WineUser'
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
+GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
