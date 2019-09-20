@@ -31,3 +31,4 @@ Run development server
 
 ``` $ python manage.py runserver```
 
+winecompanion.heroku.com
