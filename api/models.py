@@ -46,7 +46,11 @@ class WineLine(models.Model):
     """Model for winery wine lines"""
     name = models.CharField(max_length=20)
     description = models.TextField()
-    winery = models.ForeignKey(Winery, on_delete=models.CASCADE)
+    winery = models.ForeignKey(
+        Winery,
+        related_name='wine_lines',
+        on_delete=models.CASCADE,
+    )
 
     class Meta:
         verbose_name = 'Wine-line'
@@ -67,7 +71,11 @@ class Wine(models.Model):
         choices=VARIETALS,
         default='4',
     )
-    wine_line = models.ForeignKey(WineLine, on_delete=models.CASCADE)
+    wine_line = models.ForeignKey(
+        WineLine,
+        related_name='wines',
+        on_delete=models.CASCADE,
+    )
 
     def __str__(self):
         return self.name
