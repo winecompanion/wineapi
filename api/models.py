@@ -8,7 +8,6 @@ from django.core.validators import MinValueValidator
 
 
 from . import VARIETALS
-from users.models import WineUser
 
 
 class Tag(models.Model):
@@ -131,7 +130,7 @@ class Reservation(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))]
     )
-    user = models.ForeignKey(WineUser, on_delete=models.PROTECT)
+    user = models.ForeignKey('users.wineuser', on_delete=models.PROTECT)
     event_occurrence = models.ForeignKey(EventOccurrence, on_delete=models.PROTECT)
 
     def __str__(self):

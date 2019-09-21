@@ -5,6 +5,17 @@ from rest_framework import serializers
 from django.utils import timezone
 from django.db import models
 
+from api.models import Winery
+from api.serializers import WinerySerializer
+
+from . import TOURIST, WINERY
+
+
+USER_TYPE_CHOICES = [
+    (TOURIST, 'TOURIST'),
+    (WINERY, 'WINERY'),
+]
+
 
 class WineUserManager(BaseUserManager):
     """
@@ -49,6 +60,9 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     birth_date = models.DateField(null=True, blank=True)
+    user_type = models.CharField(max_length=20, blank=True, choices=USER_TYPE_CHOICES, default=TOURIST)
+
+    winery = models.ForeignKey('api.winery', null=True, blank=True, on_delete=models.CASCADE)
 
     objects = WineUserManager()
 
@@ -62,18 +76,25 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
 class UserSerializer(serializers.ModelSerializer):
     """Serializes a user for the api endpoint"""
     id = serializers.ReadOnlyField()
+    winery = WinerySerializer(required=False)
 
     class Meta:
         model = WineUser
-        fields = ('id', 'email', 'password', 'first_name', 'last_name', 'birth_date')
+        fields = ('id', 'email', 'password', 'first_name', 'last_name', 'birth_date', 'winery', 'user_type')
         extra_kwargs = {
             'password': {
                 'write_only': True,
                 'style': {'input_type': 'password'}
-            }
+            },
         }
 
     def create(self, validated_data):
         """Create and return a new user"""
-        user = WineUser.objects.create_user(**validated_data)
+        winery_data = validated_data.pop('winery', None)
+        user = WineUser(**validated_data)
+        if winery_data:
+            winery = Winery.objects.create(**winery_data)
+            user.winery = winery
+            user.user_type = WINERY
+        user.save()
         return user

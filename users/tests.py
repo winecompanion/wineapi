@@ -4,19 +4,26 @@ from django.core.exceptions import ValidationError
 
 from rest_framework import status
 
+from . import TOURIST, WINERY
 from .models import WineUser, UserSerializer
 
 
 class TestUser(TestCase):
     def setUp(self):
         self.valid_user_data = {
-                'email': 'example@winecompanion.com',
-                'password': '1234',
-                'first_name': 'First Name',
-                'last_name': 'Last Name',
+            'email': 'example@winecompanion.com',
+            'password': '1234',
+            'first_name': 'First Name',
+            'last_name': 'Last Name',
+        }
+        self.valid_winery_data = {
+            'name': 'Test winery name',
+            'description': 'Test winery description',
+            'website': 'test.com',
+            'location': 'POINT(-32.8974226 -68.8704887)'
         }
         self.invalid_user_data = {
-                'email': '',
+            'email': '',
         }
         self.users_required_fields = set(['email', 'password', 'first_name', 'last_name'])
         self.serializer_fields = set(['email', 'first_name', 'last_name', 'birth_date'])
@@ -80,3 +87,17 @@ class TestUser(TestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         serializer = UserSerializer(user)
         self.assertEqual(response.data, serializer.data)
+        self.assertEqual(user.user_type, TOURIST)
+
+    def test_create_user_with_winery_endpoint(self):
+        data = self.valid_user_data
+        data['winery'] = self.valid_winery_data
+        response = self.client.post(
+            reverse('users-list'),
+            data=data,
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 201)
+        db_user = WineUser.objects.first()
+        self.assertEqual(db_user.winery.name, data['winery']['name'])
+        self.assertEqual(db_user.user_type, WINERY)
