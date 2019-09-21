@@ -6,7 +6,6 @@ from rest_framework import status
 
 from api.models import Winery, WineLine, Wine
 from api.serializers import WinerySerializer, WineLineSerializer, WineSerializer
-from users.models import WineUser
 
 
 class TestWinery(TestCase):
@@ -34,7 +33,6 @@ class TestWinery(TestCase):
             winery.full_clean()
 
     def test_winery_serializer(self):
-        data = self.valid_winery_data
         serializer = WinerySerializer(data=self.valid_winery_data)
         self.assertTrue(serializer.is_valid())
         winery_fields = ['name', 'description', 'website', 'location', 'available_since']
