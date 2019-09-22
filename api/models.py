@@ -8,7 +8,6 @@ from django.core.validators import MinValueValidator
 
 
 from . import VARIETALS
-from users.models import WineUser
 
 
 class Tag(models.Model):
@@ -47,7 +46,11 @@ class WineLine(models.Model):
     """Model for winery wine lines"""
     name = models.CharField(max_length=20)
     description = models.TextField()
-    winery = models.ForeignKey(Winery, on_delete=models.CASCADE)
+    winery = models.ForeignKey(
+        Winery,
+        related_name='wine_lines',
+        on_delete=models.CASCADE,
+    )
 
     class Meta:
         verbose_name = 'Wine-line'
@@ -68,7 +71,11 @@ class Wine(models.Model):
         choices=VARIETALS,
         default='4',
     )
-    wine_line = models.ForeignKey(WineLine, on_delete=models.CASCADE)
+    wine_line = models.ForeignKey(
+        WineLine,
+        related_name='wines',
+        on_delete=models.CASCADE,
+    )
 
     def __str__(self):
         return self.name
@@ -131,7 +138,7 @@ class Reservation(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))]
     )
-    user = models.ForeignKey(WineUser, on_delete=models.PROTECT)
+    user = models.ForeignKey('users.wineuser', on_delete=models.PROTECT)
     event_occurrence = models.ForeignKey(EventOccurrence, on_delete=models.PROTECT)
 
     def __str__(self):

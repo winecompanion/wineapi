@@ -49,29 +49,13 @@ class TestWinery(TestCase):
         )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
-    def test_winery_endpoint_create(self):
+    def test_winery_endpoint_create_should_not_be_allowed(self):
+        data = self.valid_winery_data
         response = self.client.post(
             reverse('winery-list'),
-            self.valid_winery_data
+            data
         )
-        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-
-    def test_winery_endpoint_create_with_invalid_data(self):
-        response = self.client.post(
-            reverse('winery-list'),
-            self.invalid_winery_data
-        )
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(response.data['errors'].keys(), self.required_fields)
-
-    def test_winery_detail_get(self):
-        winery = Winery.objects.create(**self.valid_winery_data)
-        response = self.client.get(
-            reverse('winery-detail', kwargs={'pk': winery.id})
-        )
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        serializer = WinerySerializer(winery)
-        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(status.HTTP_405_METHOD_NOT_ALLOWED, response.status_code)
 
 
 class TestWines(TestCase):

@@ -74,15 +74,7 @@ class WineryView(viewsets.ModelViewSet):
 
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     search_fields = ['name', 'description']
-
-    # to do: filterset_class
-
-    def create(self, request):
-        serializer = WinerySerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        winery = serializer.create(serializer.validated_data)
-        return Response({'url': reverse('winery-detail', args=[winery.id])}, status=status.HTTP_201_CREATED)
+    http_method_names = ['get', 'head', 'put', 'patch']
 
 
 class WineView(viewsets.ModelViewSet):
