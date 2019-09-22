@@ -160,24 +160,6 @@ class EventSerializer(serializers.ModelSerializer):
         return super().to_representation(obj)
 
 
-class WinerySerializer(serializers.ModelSerializer):
-    """Serializes a winery for the api endpoint"""
-    id = serializers.ReadOnlyField()
-
-    class Meta:
-        model = Winery
-        fields = ('id', 'name', 'description', 'website', 'available_since', 'location')
-
-
-class WineLineSerializer(serializers.ModelSerializer):
-    """Serializes a wine line for the api endpoint"""
-    id = serializers.ReadOnlyField()
-
-    class Meta:
-        model = WineLine
-        fields = ('id', 'name', 'description', 'winery')
-
-
 class WineSerializer(serializers.ModelSerializer):
     """Serializes wines for the api endpoint"""
     id = serializers.ReadOnlyField()
@@ -185,6 +167,26 @@ class WineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wine
         fields = ('id', 'name', 'description', 'winery', 'varietal', 'wine_line')
+
+
+class WineLineSerializer(serializers.ModelSerializer):
+    """Serializes a wine line for the api endpoint"""
+    id = serializers.ReadOnlyField()
+    wines = WineSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = WineLine
+        fields = ('id', 'name', 'description', 'winery', 'wines')
+
+
+class WinerySerializer(serializers.ModelSerializer):
+    """Serializes a winery for the api endpoint"""
+    id = serializers.ReadOnlyField()
+    wine_lines = WineLineSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Winery
+        fields = ('id', 'name', 'description', 'website', 'wine_lines', 'available_since', 'location')
 
 
 class EventBriefSerializer(serializers.ModelSerializer):
