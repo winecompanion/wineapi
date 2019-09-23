@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from django.db.models import Avg
+
 from rest_framework import serializers
 from .models import (
     Event,
@@ -9,6 +11,7 @@ from .models import (
     Wine,
     EventCategory,
     Tag,
+    Rate,
     Reservation,
 )
 
@@ -52,11 +55,12 @@ class VenueSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
-    vacancies = serializers.IntegerField(write_only=True)
-    schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
     categories = EventCategorySerializer(many=True)
-    tags = TagSerializer(many=True, required=False)
     occurrences = serializers.SerializerMethodField(read_only=True)
+    rating = serializers.SerializerMethodField(read_only=True)
+    schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
+    tags = TagSerializer(many=True, required=False)
+    vacancies = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Event
@@ -65,13 +69,14 @@ class EventSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'cancelled',
-            'winery',
             'price',
-            'categories',
+            'rating',
             'tags',
-            'vacancies',
-            'schedule',
+            'categories',
+            'winery',
             'occurrences',
+            'schedule',
+            'vacancies',
         ]
 
     def create(self, data):
@@ -154,6 +159,10 @@ class EventSerializer(serializers.ModelSerializer):
         occurrences = EventOccurrence.objects.filter(event=event, start__gt=datetime.now())
         serializer = VenueSerializer(instance=occurrences, many=True)
         return serializer.data
+
+    def get_rating(self, event):
+        rate = Rate.objects.filter(event=event).aggregate(Avg('rate'))
+        return rate['rate__avg']
 
     def to_representation(self, obj):
         self.fields['winery'] = serializers.SlugRelatedField(read_only=True, slug_field='name')
@@ -257,3 +266,9 @@ class ReservationSerializer(serializers.ModelSerializer):
     def to_representation(self, obj):
         self.fields['event_occurrence'] = EventOccurrenceSerializer()
         return super().to_representation(obj)
+
+
+class RateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rate
+        fields = '__all__'

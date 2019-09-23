@@ -4,7 +4,7 @@ from django.db import models
 from django.contrib.gis.db.models import PointField
 from django.contrib.gis import geos
 from django.contrib.gis.measure import Distance
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 from . import VARIETALS
@@ -117,6 +117,9 @@ class Event(models.Model):
                 dates.append(day)
         return dates
 
+    def __str__(self):
+        return self.name
+
 
 class EventOccurrence(models.Model):
     start = models.DateTimeField()
@@ -127,6 +130,22 @@ class EventOccurrence(models.Model):
         related_name='occurrences',
         on_delete=models.CASCADE
     )
+
+
+class Rate(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+    rate = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    comment = models.TextField()
+    event = models.ForeignKey(
+        Event,
+        related_name='rating',
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey('users.wineuser', on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = (('event', 'user'), )
 
 
 class Reservation(models.Model):

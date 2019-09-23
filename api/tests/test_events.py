@@ -6,7 +6,7 @@ from rest_framework import status
 
 from parameterized import parameterized
 
-from api.models import Event, EventOccurrence, Winery, EventCategory, Tag
+from api.models import Event, EventCategory, EventOccurrence, Tag, Winery
 from api.serializers import EventSerializer
 
 
