@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 
 from rest_framework import status
 
+from api import VARIETALS
 from api.models import Winery, WineLine, Wine
 from api.serializers import WinerySerializer, WineLineSerializer, WineSerializer
 
@@ -139,6 +140,13 @@ class TestWines(TestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         serializer = WineSerializer(wine)
         self.assertEqual(response.data, serializer.data)
+
+    def test_varietal_get(self):
+        response = self.client.get(
+            reverse('varietals')
+        )
+        expected = [{'id': k, 'value': v} for k, v in VARIETALS]
+        self.assertEqual(response.data, expected)
 
 
 class TestWineLines(TestCase):

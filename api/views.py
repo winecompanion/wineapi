@@ -8,6 +8,7 @@ from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import DateTimeFromToRangeFilter, FilterSet, ModelMultipleChoiceFilter
 
+from . import VARIETALS
 from .models import (
     Event,
     EventCategory,
@@ -167,3 +168,9 @@ class ReservationView(viewsets.ModelViewSet):
         return Response(
             {'url': reverse('reservations-detail', args=[reservation.id])},
             status=status.HTTP_201_CREATED)
+
+
+class VarietalsView(APIView):
+    def get(self, request):
+        varietals = [{'id': k, 'value': v} for k, v in VARIETALS]
+        return Response(varietals)
