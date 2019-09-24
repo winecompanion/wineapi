@@ -13,5 +13,6 @@ router.register(r'reservations', views.ReservationView, basename='reservations')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('maps/', views.MapsView.as_view())
+    path('maps/', views.MapsView.as_view()),
+    path('varietals/', views.VarietalsView.as_view(), name='varietals'),
 ]
