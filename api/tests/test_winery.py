@@ -20,7 +20,7 @@ class TestWinery(TestCase):
         self.invalid_winery_data = {
                 'description': 'description',
         }
-        self.required_fields = set(['name', 'website'])
+        self.required_fields = set(['name', ])
         self.client = Client()
 
     def test_winery_creation(self):
@@ -110,6 +110,25 @@ class TestWines(TestCase):
         serializer = WineSerializer(data=self.invalid_wine_data)
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors), self.wine_required_fields)
+
+    def test_invalid_wine_creation_serializer(self):
+        """Test that when creating a wine the wine line is from the same winery"""
+        data = self.valid_wine_data
+        winery = Winery.objects.create(
+                name='Other winery',
+                description='Other',
+        )
+        wineline = WineLine.objects.create(
+            name='From other winery',
+            winery=winery,
+        )
+        data['wine_line'] = wineline.id
+        serializer = WineSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(
+            set(serializer.errors['non_field_errors']),
+            set(['The wine line specified does not match the same winery'])
+        )
 
     def test_wine_endpoint_get(self):
         response = self.client.get(

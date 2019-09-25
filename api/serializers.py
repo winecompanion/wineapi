@@ -168,6 +168,17 @@ class WineSerializer(serializers.ModelSerializer):
         model = Wine
         fields = ('id', 'name', 'description', 'winery', 'varietal', 'wine_line')
 
+    def validate(self, data):
+        """Validate that the wine-line if from the same winery"""
+        try:
+            wine_line = WineLine.objects.get(name=data['wine_line'])
+            if wine_line.winery.id != data['winery'].id:
+                raise ValueError
+        except Exception:
+            raise serializers.ValidationError('The wine line specified does not match the same winery')
+
+        return data
+
 
 class WineLineSerializer(serializers.ModelSerializer):
     """Serializes a wine line for the api endpoint"""
