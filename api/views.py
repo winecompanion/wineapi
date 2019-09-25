@@ -13,6 +13,7 @@ from .models import (
     Event,
     EventCategory,
     EventOccurrence,
+    Rate,
     Reservation,
     Tag,
     Wine,
@@ -22,6 +23,7 @@ from .models import (
 from .serializers import (
     EventCategorySerializer,
     EventSerializer,
+    RateSerializer,
     ReservationSerializer,
     TagSerializer,
     WinerySerializer,
@@ -174,3 +176,18 @@ class VarietalsView(APIView):
     def get(self, request):
         varietals = [{'id': k, 'value': v} for k, v in VARIETALS]
         return Response(varietals)
+
+
+class RatingView(viewsets.ModelViewSet):
+    queryset = Rate.objects.all()
+    serializer_class = RateSerializer
+    model_class = Rate
+
+    def create(self, request):
+        serializer = RateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        rate = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('rates-detail', args=[rate.id])},
+            status=status.HTTP_201_CREATED)
