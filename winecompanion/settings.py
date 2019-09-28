@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'rest_framework',
+    'rest_auth',
+    'rest_framework.authtoken',
     'rest_framework_gis',
     'rest_framework_swagger',
     'users',
@@ -131,3 +133,7 @@ STATIC_URL = '/static/'
 AUTH_USER_MODEL = 'users.WineUser'
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend'
+]

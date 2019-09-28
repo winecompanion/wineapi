@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
@@ -51,7 +52,7 @@ class WineUserManager(BaseUserManager):
 
 class WineUser(AbstractBaseUser, PermissionsMixin):
 
-    email = models.EmailField(('email address'), unique=True)
+    email = models.EmailField('email address', unique=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(default=timezone.now)
@@ -79,7 +80,7 @@ class UserSerializer(serializers.ModelSerializer):
     winery = WinerySerializer(required=False)
 
     class Meta:
-        model = WineUser
+        model = get_user_model()
         fields = ('id', 'email', 'password', 'first_name', 'last_name', 'birth_date', 'winery', 'user_type')
         extra_kwargs = {
             'password': {
@@ -91,7 +92,7 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create and return a new user"""
         winery_data = validated_data.pop('winery', None)
-        user = WineUser(**validated_data)
+        user = WineUser.objects.create_user(**validated_data)
         if winery_data:
             winery = Winery.objects.create(**winery_data)
             user.winery = winery

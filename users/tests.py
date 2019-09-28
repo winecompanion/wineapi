@@ -12,7 +12,7 @@ class TestUser(TestCase):
     def setUp(self):
         self.valid_user_data = {
             'email': 'example@winecompanion.com',
-            'password': '1234',
+            'password': 'testuserpass',
             'first_name': 'First Name',
             'last_name': 'Last Name',
         }
@@ -101,3 +101,11 @@ class TestUser(TestCase):
         db_user = WineUser.objects.first()
         self.assertEqual(db_user.winery.name, data['winery']['name'])
         self.assertEqual(db_user.user_type, WINERY)
+
+    def test_user_login(self):
+        user = WineUser.objects.create_user(**self.valid_user_data)
+        res = self.client.post(
+            reverse('rest_login'),
+            {'email': user.email, 'password': self.valid_user_data['password']},
+        )
+        self.assertIn('key', res.data)
