@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'rest_framework',
+    'rest_auth',
+    'rest_framework.authtoken',
     'rest_framework_gis',
     'rest_framework_swagger',
     'users',
@@ -139,3 +141,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
 GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend'
+]

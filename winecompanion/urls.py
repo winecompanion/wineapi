@@ -28,6 +28,7 @@ router.register(r'users', views.WineUserView, basename='users')
 urlpatterns = [
     path(r'swagger-docs/', schema_view),
     path('api/', include('api.urls')),
+    path('rest-auth/', include('rest_auth.urls')),
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
 ]
