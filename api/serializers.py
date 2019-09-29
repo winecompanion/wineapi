@@ -1,4 +1,5 @@
 from datetime import datetime
+from winecompanion import settings
 
 from django.db.models import Avg
 
@@ -199,14 +200,26 @@ class WineLineSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'description', 'winery', 'wines')
 
 
+class ImageUrlField(serializers.RelatedField):
+    def to_representation(self, value):
+        url = settings.MEDIA_URL + str(value.filefield)
+        return url
+
+
+class FileSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=True, allow_null=False)
+    filefield = serializers.ListField(child=serializers.FileField())
+
+
 class WinerySerializer(serializers.ModelSerializer):
     """Serializes a winery for the api endpoint"""
     id = serializers.ReadOnlyField()
     wine_lines = WineLineSerializer(many=True, read_only=True)
+    images = ImageUrlField(read_only=True, many=True)
 
     class Meta:
         model = Winery
-        fields = ('id', 'name', 'description', 'website', 'wine_lines', 'available_since', 'location')
+        fields = ('id', 'name', 'description', 'website', 'wine_lines', 'available_since', 'location', 'images')
 
 
 class EventBriefSerializer(serializers.ModelSerializer):

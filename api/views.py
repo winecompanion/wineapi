@@ -19,6 +19,7 @@ from .models import (
     Wine,
     WineLine,
     Winery,
+    ImagesWinery,
 )
 from .serializers import (
     EventCategorySerializer,
@@ -29,6 +30,7 @@ from .serializers import (
     WinerySerializer,
     WineLineSerializer,
     WineSerializer,
+    FileSerializer,
 )
 
 
@@ -191,3 +193,17 @@ class RatingView(viewsets.ModelViewSet):
         return Response(
             {'url': reverse('rates-detail', args=[rate.id])},
             status=status.HTTP_201_CREATED)
+
+
+class FileUploadView(APIView):
+    def post(self, request):
+        serializer = FileSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        if Winery.objects.filter(pk=serializer.validated_data['id']).exists():
+            winery = Winery.objects.get(pk=serializer.validated_data['id'])
+            for onefile in serializer.validated_data['filefield']:
+                ImagesWinery.objects.create(filefield=onefile, winery=winery)
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response({'errors': 'Winery not found '}, status=status.HTTP_400_BAD_REQUEST)

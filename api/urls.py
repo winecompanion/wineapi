@@ -16,4 +16,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('maps/', views.MapsView.as_view()),
     path('varietals/', views.VarietalsView.as_view(), name='varietals'),
+    path('upload/', views.FileUploadView.as_view()),
 ]

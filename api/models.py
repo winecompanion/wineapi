@@ -162,3 +162,12 @@ class Reservation(models.Model):
 
     def __str__(self):
         return str(self.id) + ": " + self.user.name + ", " + str(self.paid_amount)
+
+
+class ImagesWinery(models.Model):
+    filefield = models.FileField(blank=True, null=True)
+    winery = models.ForeignKey(
+        Winery,
+        related_name='images',
+        on_delete=models.CASCADE
+    )
