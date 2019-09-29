@@ -176,18 +176,13 @@ class WineSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Wine
-        fields = ('id', 'name', 'description', 'winery', 'varietal', 'wine_line')
+        fields = ('id', 'name', 'description', 'varietal')
 
-    def validate(self, data):
-        """Validate that the wine-line if from the same winery"""
-        try:
-            wine_line = WineLine.objects.get(name=data['wine_line'])
-            if wine_line.winery.id != data['winery'].id:
-                raise ValueError
-        except Exception:
-            raise serializers.ValidationError('The wine line specified does not match the same winery')
-
-        return data
+    def create(self, data, winery_pk, wineline_pk):
+        data['wine_line_id'] = wineline_pk
+        data['winery_id'] = winery_pk
+        wine = Wine.objects.create(**data)
+        return wine
 
 
 class WineLineSerializer(serializers.ModelSerializer):
@@ -197,7 +192,12 @@ class WineLineSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WineLine
-        fields = ('id', 'name', 'description', 'winery', 'wines')
+        fields = ('id', 'name', 'description', 'wines')
+
+    def create(self, data, winery_pk):
+        data['winery_id'] = winery_pk
+        wine_line = WineLine.objects.create(**data)
+        return wine_line
 
 
 class ImageUrlField(serializers.RelatedField):
@@ -282,6 +282,17 @@ class ReservationSerializer(serializers.ModelSerializer):
 
 
 class RateSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
     class Meta:
         model = Rate
-        fields = '__all__'
+        fields = ('user', 'rate', 'comment')
+
+    def get_user(self, rate):
+        return rate.user.full_name()
+
+    def create(self, data, event_pk, user_pk):
+        data['event_id'] = event_pk
+        data['user_id'] = user_pk
+        rate = Rate.objects.create(**data)
+        return rate

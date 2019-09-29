@@ -73,6 +73,9 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
+    def full_name(self):
+        return self.first_name + " " + self.last_name
+
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializes a user for the api endpoint"""

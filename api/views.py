@@ -83,29 +83,40 @@ class WineryView(viewsets.ModelViewSet):
 
 
 class WineView(viewsets.ModelViewSet):
-    queryset = Wine.objects.all()
     serializer_class = WineSerializer
 
-    def create(self, request):
+    def create(self, request, winery_pk, wineline_pk):
         serializer = WineSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        wine = serializer.create(serializer.validated_data)
-        return Response({'url': reverse('wine-detail', args=[wine.id])}, status=status.HTTP_201_CREATED)
+        wine = serializer.create(serializer.validated_data, winery_pk, wineline_pk)
+        return Response({
+            'url': reverse(
+                    'wines-detail',
+                    kwargs={'winery_pk': winery_pk, 'wineline_pk': wineline_pk, 'pk': wine.id}
+                    )
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+    def get_queryset(self):
+        return Wine.objects.filter(wine_line=self.kwargs['wineline_pk'])
 
 
 class WineLineView(viewsets.ModelViewSet):
-    queryset = WineLine.objects.all()
     serializer_class = WineLineSerializer
 
-    def create(self, request):
+    def create(self, request, winery_pk):
         serializer = WineLineSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        wine_line = serializer.create(serializer.validated_data)
+        wine_line = serializer.create(serializer.validated_data, winery_pk)
         return Response(
-            {'url': reverse('wine-line-detail', args=[wine_line.id])},
+            {'url': reverse('winelines-detail', kwargs={'winery_pk': winery_pk, 'pk': wine_line.id})},
             status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        return WineLine.objects.filter(winery=self.kwargs['winery_pk'])
 
 
 class MapsView(APIView):
@@ -181,18 +192,24 @@ class VarietalsView(APIView):
 
 
 class RatingView(viewsets.ModelViewSet):
-    queryset = Rate.objects.all()
     serializer_class = RateSerializer
     model_class = Rate
 
-    def create(self, request):
+    def create(self, request, event_pk):
         serializer = RateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        rate = serializer.create(serializer.validated_data)
+
+        # TODO: decorator for loguin required
+        # TODO: user already rated the event error message
+        user = request.user
+        rate = serializer.create(serializer.validated_data, event_pk, user.id)
         return Response(
-            {'url': reverse('rates-detail', args=[rate.id])},
+            {'url': reverse('event-ratings-detail', kwargs={'event_pk': event_pk, 'pk': rate.id})},
             status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        return Rate.objects.filter(event=self.kwargs['event_pk'])
 
 
 class FileUploadView(APIView):
