@@ -14,7 +14,6 @@ from .models import (
     Tag,
     Rate,
     Reservation,
-    ImagesWinery,
 )
 
 
@@ -203,7 +202,7 @@ class WineLineSerializer(serializers.ModelSerializer):
 
 class ImageUrlField(serializers.RelatedField):
     def to_representation(self, value):
-        url = settings.MEDIA_URL + str(value.filefield) 
+        url = settings.MEDIA_URL + str(value.filefield)
         return url
 
 
@@ -216,8 +215,8 @@ class WinerySerializer(serializers.ModelSerializer):
     """Serializes a winery for the api endpoint"""
     id = serializers.ReadOnlyField()
     wine_lines = WineLineSerializer(many=True, read_only=True)
-    images =  ImageUrlField(read_only=True, many=True)
-    
+    images = ImageUrlField(read_only=True, many=True)
+
     class Meta:
         model = Winery
         fields = ('id', 'name', 'description', 'website', 'wine_lines', 'available_since', 'location', 'images')
