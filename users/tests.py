@@ -105,7 +105,7 @@ class TestUser(TestCase):
     def test_user_login(self):
         user = WineUser.objects.create_user(**self.valid_user_data)
         res = self.client.post(
-            reverse('rest_login'),
+            reverse('token_obtain_pair'),
             {'email': user.email, 'password': self.valid_user_data['password']},
         )
-        self.assertIn('key', res.data)
+        self.assertEqual(set(['access', 'refresh']), set(res.data.keys()))
