@@ -1,12 +1,14 @@
 from datetime import datetime
 
+from django_filters.rest_framework import DjangoFilterBackend
+from django_filters import DateTimeFromToRangeFilter, FilterSet, ModelMultipleChoiceFilter
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework import status, viewsets
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework import filters
-from django_filters.rest_framework import DjangoFilterBackend
-from django_filters import DateTimeFromToRangeFilter, FilterSet, ModelMultipleChoiceFilter
 
 from . import VARIETALS
 from .models import (
@@ -100,7 +102,11 @@ class WineView(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        return Wine.objects.filter(wine_line=self.kwargs['wineline_pk'])
+        wine_line = get_object_or_404(WineLine, id=self.kwargs['wineline_pk'])
+        winery = get_object_or_404(Winery, id=self.kwargs['winery_pk'])
+        if wine_line.winery.id != winery.id:
+            raise PermissionDenied(detail="winery and wine line don't match")
+        return Wine.objects.filter(wine_line=wine_line.id)
 
 
 class WineLineView(viewsets.ModelViewSet):
@@ -116,7 +122,8 @@ class WineLineView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
-        return WineLine.objects.filter(winery=self.kwargs['winery_pk'])
+        winery = get_object_or_404(Winery,id=self.kwargs['winery_pk'])
+        return WineLine.objects.filter(winery=winery.id)
 
 
 class MapsView(APIView):
@@ -177,7 +184,7 @@ class ReservationView(viewsets.ModelViewSet):
         reservation = serializer.create(serializer.validated_data)
 
         # get event occurrency and decrement vacancies
-        event_occurrence = EventOccurrence.objects.get(pk=request.data['event_occurrence'])
+        event_occurrence = get_object_or_404(EventOccurrence, pk=request.data['event_occurrence'])
         event_occurrence.vacancies -= int(request.data['attendee_number'])
         event_occurrence.save()
         return Response(
@@ -209,7 +216,8 @@ class RatingView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
-        return Rate.objects.filter(event=self.kwargs['event_pk'])
+        event = get_object_or_404(Event, id=self.kwargs['event_pk'])
+        return Rate.objects.filter(event=event.id)
 
 
 class FileUploadView(APIView):
@@ -218,7 +226,7 @@ class FileUploadView(APIView):
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         if Winery.objects.filter(pk=serializer.validated_data['id']).exists():
-            winery = Winery.objects.get(pk=serializer.validated_data['id'])
+            winery = get_object_or_404(Winery, pk=serializer.validated_data['id'])
             for onefile in serializer.validated_data['filefield']:
                 ImagesWinery.objects.create(filefield=onefile, winery=winery)
             return Response(status=status.HTTP_201_CREATED)
