@@ -161,7 +161,7 @@ class Reservation(models.Model):
     event_occurrence = models.ForeignKey(EventOccurrence, on_delete=models.PROTECT)
 
     def __str__(self):
-        return str(self.id) + ": " + self.user.name + ", " + str(self.paid_amount)
+        return str(self.id) + ": " + self.user.first_name + " " + self.user.last_name + ", " + str(self.paid_amount)
 
 
 class ImagesWinery(models.Model):
