@@ -21,10 +21,10 @@ from django.urls import path, include
 from rest_framework_swagger.views import get_swagger_view
 from rest_framework import routers
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
     TokenRefreshView,
 )
 
+from users.token import MyTokenObtainPairView
 from users import views
 
 schema_view = get_swagger_view(title='WineCompanion APIs')
@@ -35,7 +35,7 @@ router.register(r'users', views.WineUserView, basename='users')
 urlpatterns = [
     path(r'swagger-docs/', schema_view),
     path('api/', include('api.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
