@@ -13,15 +13,19 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
-from rest_framework_swagger.views import get_swagger_view
-from rest_framework import routers
-
-from users import views
-
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import path, include
+
+from rest_framework_swagger.views import get_swagger_view
+from rest_framework import routers
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
+from users import views
 
 schema_view = get_swagger_view(title='WineCompanion APIs')
 
@@ -31,7 +35,8 @@ router.register(r'users', views.WineUserView, basename='users')
 urlpatterns = [
     path(r'swagger-docs/', schema_view),
     path('api/', include('api.urls')),
-    path('rest-auth/', include('rest_auth.urls')),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
 ]
