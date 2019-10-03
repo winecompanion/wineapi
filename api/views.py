@@ -205,6 +205,7 @@ class FileUploadView(APIView):
             return self.wineryUpload(serializer)
         if serializer.validated_data['type'] == 'event':
             return self.eventUpload(serializer)
+        return Response({'errors': 'Type not found'}, status=status.HTTP_400_BAD_REQUEST)
 
     def wineryUpload(self, serializer):
         if Winery.objects.filter(pk=serializer.validated_data['id']).exists():
