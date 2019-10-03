@@ -54,6 +54,12 @@ class VenueSerializer(serializers.ModelSerializer):
         fields = ('id', 'start', 'end', 'vacancies')
 
 
+class ImageUrlField(serializers.RelatedField):
+    def to_representation(self, value):
+        url = settings.MEDIA_URL + str(value.filefield)
+        return url
+
+
 class EventSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     categories = EventCategorySerializer(many=True)
@@ -62,6 +68,7 @@ class EventSerializer(serializers.ModelSerializer):
     schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
     tags = TagSerializer(many=True, required=False)
     vacancies = serializers.IntegerField(write_only=True)
+    images = ImageUrlField(read_only=True, many=True)
 
     class Meta:
         model = Event
@@ -78,6 +85,7 @@ class EventSerializer(serializers.ModelSerializer):
             'occurrences',
             'schedule',
             'vacancies',
+            'images',
         ]
 
     def create(self, data):
@@ -200,14 +208,9 @@ class WineLineSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'description', 'winery', 'wines')
 
 
-class ImageUrlField(serializers.RelatedField):
-    def to_representation(self, value):
-        url = settings.MEDIA_URL + str(value.filefield)
-        return url
-
-
 class FileSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=True, allow_null=False)
+    type = serializers.CharField(required=True, allow_null=False)
     filefield = serializers.ListField(child=serializers.FileField())
 
 

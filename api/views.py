@@ -20,6 +20,7 @@ from .models import (
     WineLine,
     Winery,
     ImagesWinery,
+    ImagesEvent,
 )
 from .serializers import (
     EventCategorySerializer,
@@ -200,6 +201,12 @@ class FileUploadView(APIView):
         serializer = FileSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        if serializer.validated_data['type'] == 'winery':
+            return self.wineryUpload(serializer)
+        if serializer.validated_data['type'] == 'event':
+            return self.eventUpload(serializer)
+
+    def wineryUpload(self, serializer):
         if Winery.objects.filter(pk=serializer.validated_data['id']).exists():
             winery = Winery.objects.get(pk=serializer.validated_data['id'])
             for onefile in serializer.validated_data['filefield']:
@@ -207,3 +214,12 @@ class FileUploadView(APIView):
             return Response(status=status.HTTP_201_CREATED)
         else:
             return Response({'errors': 'Winery not found '}, status=status.HTTP_400_BAD_REQUEST)
+
+    def eventUpload(self, serializer):
+        if Event.objects.filter(pk=serializer.validated_data['id']).exists():
+            event = Event.objects.get(pk=serializer.validated_data['id'])
+            for onefile in serializer.validated_data['filefield']:
+                ImagesEvent.objects.create(filefield=onefile, event=event)
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response({'errors': 'Event not found '}, status=status.HTTP_400_BAD_REQUEST)
