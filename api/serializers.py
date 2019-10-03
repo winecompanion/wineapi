@@ -155,7 +155,7 @@ class EventSerializer(serializers.ModelSerializer):
         for tag in tags:
             try:
                 Tag.objects.get(name=tag['name'])
-            except Exception:
+            except Tag.DoesNotExist:
                 raise serializers.ValidationError("tag {} does not exist".format(tag['name']))
 
         return tags
@@ -292,14 +292,11 @@ class ReservationSerializer(serializers.ModelSerializer):
 
 
 class RateSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
+    user_name = serializers.ReadOnlyField()
 
     class Meta:
         model = Rate
-        fields = ('user', 'rate', 'comment')
-
-    def get_user(self, rate):
-        return rate.user.full_name()
+        fields = ('user_name', 'rate', 'comment')
 
     def create(self, data, event_pk, user_pk):
         data['event_id'] = event_pk

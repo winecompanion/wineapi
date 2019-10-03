@@ -3,12 +3,14 @@ from datetime import datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import DateTimeFromToRangeFilter, FilterSet, ModelMultipleChoiceFilter
 from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
-from rest_framework import status, viewsets
-from rest_framework.reverse import reverse
-from rest_framework.response import Response
-from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework import filters
+from rest_framework import status, viewsets
+from rest_framework.decorators import permission_classes
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 
 from . import VARIETALS
 from .models import (
@@ -122,7 +124,7 @@ class WineLineView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
-        winery = get_object_or_404(Winery,id=self.kwargs['winery_pk'])
+        winery = get_object_or_404(Winery, id=self.kwargs['winery_pk'])
         return WineLine.objects.filter(winery=winery.id)
 
 
@@ -202,13 +204,12 @@ class RatingView(viewsets.ModelViewSet):
     serializer_class = RateSerializer
     model_class = Rate
 
+    @permission_classes([IsAuthenticated])
     def create(self, request, event_pk):
         serializer = RateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        # TODO: decorator for loguin required
-        # TODO: user already rated the event error message
         user = request.user
         rate = serializer.create(serializer.validated_data, event_pk, user.id)
         return Response(
