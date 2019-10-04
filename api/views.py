@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import DateTimeFromToRangeFilter, FilterSet, ModelMultipleChoiceFilter
+from django.shortcuts import get_object_or_404
 
 from . import VARIETALS
 from .models import (
@@ -202,25 +203,19 @@ class FileUploadView(APIView):
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         if serializer.validated_data['type'] == 'winery':
-            return self.wineryUpload(serializer)
+            return self.winery_Upload(serializer)
         if serializer.validated_data['type'] == 'event':
-            return self.eventUpload(serializer)
+            return self.event_Upload(serializer)
         return Response({'errors': 'Type not found'}, status=status.HTTP_400_BAD_REQUEST)
 
-    def wineryUpload(self, serializer):
-        if Winery.objects.filter(pk=serializer.validated_data['id']).exists():
-            winery = Winery.objects.get(pk=serializer.validated_data['id'])
-            for onefile in serializer.validated_data['filefield']:
-                ImagesWinery.objects.create(filefield=onefile, winery=winery)
-            return Response(status=status.HTTP_201_CREATED)
-        else:
-            return Response({'errors': 'Winery not found '}, status=status.HTTP_400_BAD_REQUEST)
+    def winery_upload(self, serializer):
+        winery = get_object_or_404(Winery, pk=serializer.validated_data['id'])
+        for onefile in serializer.validated_data['filefield']:
+            ImagesWinery.objects.create(filefield=onefile, winery=winery)
+        return Response(status=status.HTTP_201_CREATED)
 
-    def eventUpload(self, serializer):
-        if Event.objects.filter(pk=serializer.validated_data['id']).exists():
-            event = Event.objects.get(pk=serializer.validated_data['id'])
-            for onefile in serializer.validated_data['filefield']:
-                ImagesEvent.objects.create(filefield=onefile, event=event)
-            return Response(status=status.HTTP_201_CREATED)
-        else:
-            return Response({'errors': 'Event not found '}, status=status.HTTP_400_BAD_REQUEST)
+    def event_upload(self, serializer):
+        event = get_object_or_404(Event, pk=serializer.validated_data['id'])
+        for onefile in serializer.validated_data['filefield']:
+            ImagesEvent.objects.create(filefield=onefile, event=event)
+        return Response(status=status.HTTP_201_CREATED)
