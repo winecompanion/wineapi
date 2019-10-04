@@ -14,6 +14,8 @@ class TestReservation(TestCase):
         self.user = WineUser.objects.create_user(
             email='user@user.com',
             password='12345678',
+            first_name='User',
+            last_name='Test',
         )
         self.winery = Winery.objects.create(
                 name='My Winery',
@@ -161,3 +163,18 @@ class TestReservation(TestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         serializer = ReservationSerializer(reservation)
         self.assertEqual(response.data, serializer.data)
+
+    def test_get_user_reservations(self):
+        self.client.force_login(self.user)
+        reservation = Reservation.objects.create(**self.valid_creation_data)
+        response = self.client.get(
+            reverse('users-reservations')
+        )
+        self.assertDictContainsSubset({'id': reservation.id}, response.data[0])
+
+    def test_get_user_reservations_not_logged_in(self):
+        Reservation.objects.create(**self.valid_creation_data)
+        response = self.client.get(
+            reverse('users-reservations')
+        )
+        self.assertEqual(response.data, [])
