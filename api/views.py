@@ -59,7 +59,10 @@ class EventFilter(FilterSet):
 
 
 class EventsView(viewsets.ModelViewSet):
-    queryset = Event.objects.filter(occurrences__start__gt=datetime.now()).distinct()
+    queryset = Event.objects.filter(
+        occurrences__start__gt=datetime.now()
+    ).exclude(categories__name__icontains='restaurant').distinct()
+
     serializer_class = EventSerializer
 
     # search elements (must use search= as query params)
@@ -241,3 +244,13 @@ class FileUploadView(APIView):
             return Response(status=status.HTTP_201_CREATED)
         else:
             return Response({'errors': 'Winery not found '}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RestaurantsView(APIView):
+    def get(self, request):
+        query = Event.objects.filter(
+            occurrences__start__gt=datetime.now(), categories__name__icontains='restaurant'
+        ).distinct().order_by('occurrences__start')
+
+        restaurants = EventSerializer(query, many=True)
+        return Response(restaurants.data, status=status.HTTP_200_OK)
