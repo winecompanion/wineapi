@@ -63,6 +63,7 @@ class EventSerializer(serializers.ModelSerializer):
     categories = EventCategorySerializer(many=True)
     occurrences = serializers.SerializerMethodField(read_only=True)
     rating = serializers.SerializerMethodField(read_only=True)
+    current_user_rating = serializers.SerializerMethodField(read_only=True)
     schedule = ScheduleSerializer(many=True, write_only=True, allow_empty=False)
     tags = TagSerializer(many=True, required=False)
     vacancies = serializers.IntegerField(write_only=True)
@@ -76,6 +77,7 @@ class EventSerializer(serializers.ModelSerializer):
             'cancelled',
             'price',
             'rating',
+            'current_user_rating',
             'tags',
             'categories',
             'winery',
@@ -168,6 +170,15 @@ class EventSerializer(serializers.ModelSerializer):
     def get_rating(self, event):
         rate = Rate.objects.filter(event=event).aggregate(Avg('rate'))
         return rate['rate__avg']
+
+    def get_current_user_rating(self, event):
+        request = self.context.get("request")
+        if request and not request.user.is_anonymous:
+            user = request.user
+            rate = Rate.objects.filter(event=event, user=user).first()
+            return getattr(rate, 'rate')
+
+        return None
 
     def to_representation(self, obj):
         self.fields['winery'] = serializers.SlugRelatedField(read_only=True, slug_field='name')

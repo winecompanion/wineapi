@@ -29,7 +29,7 @@ wines_router = routers.NestedDefaultRouter(wine_lines_router, r'wine-lines', loo
 wines_router.register(r'wines', WineView, basename='wines')
 # router.register(r'wines', WineView, basename='wine')
 
-router.register(r'events', EventsView)
+router.register(r'events', EventsView, basename='event')
 
 ratings_router = routers.NestedDefaultRouter(router, r'events', lookup='event')
 ratings_router.register(r'ratings', RatingView, basename='event-ratings')
