@@ -41,7 +41,7 @@ class TestRatings(TestCase):
         self.invalid_rate_data = {
                 'comment': 'description',
         }
-        self.required_fields = set(['rate', 'event', 'user'])
+        self.required_fields = set(['rate', ])
         self.client = Client()
 
     def test_event_rate_creation(self):
@@ -57,8 +57,8 @@ class TestRatings(TestCase):
     def test_rate_serializer(self):
         serializer = RateSerializer(data=self.valid_rate_json_data)
         self.assertTrue(serializer.is_valid())
-        rate_fields = ['rate', 'comment', 'event', 'user']
-        self.assertEqual(set(serializer.data.keys()), set(rate_fields))
+        rate_fields = ['rate', 'comment']
+        self.assertEqual(set(serializer.validated_data.keys()), set(rate_fields))
 
     def test_invalid_rate_serializer(self):
         serializer = RateSerializer(data=self.invalid_rate_data)
@@ -67,20 +67,21 @@ class TestRatings(TestCase):
 
     def test_rate_endpoint_get(self):
         response = self.client.get(
-            reverse('rates-list')
+            reverse('event-ratings-list', kwargs={'event_pk': self.event.id})
         )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_rate_endpoint_create(self):
+        self.client.force_login(self.user)
         response = self.client.post(
-            reverse('rates-list'),
+            reverse('event-ratings-list', kwargs={'event_pk': self.event.id}),
             self.valid_rate_json_data
         )
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_rate_endpoint_create_with_invalid_data(self):
         response = self.client.post(
-            reverse('rates-list'),
+            reverse('event-ratings-list', kwargs={'event_pk': self.event.id}),
             self.invalid_rate_data
         )
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -89,7 +90,7 @@ class TestRatings(TestCase):
     def test_rate_detail_get(self):
         rate = Rate.objects.create(**self.valid_rate_creation_data)
         response = self.client.get(
-            reverse('rates-detail', kwargs={'pk': rate.id})
+            reverse('event-ratings-detail', kwargs={'event_pk': self.event.id, 'pk': rate.id})
         )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         serializer = RateSerializer(rate)

@@ -1,12 +1,16 @@
 from datetime import datetime
 
-from rest_framework.views import APIView
-from rest_framework import status, viewsets
-from rest_framework.reverse import reverse
-from rest_framework.response import Response
-from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import DateTimeFromToRangeFilter, FilterSet, ModelMultipleChoiceFilter
+from django.shortcuts import get_object_or_404
+from rest_framework import filters
+from rest_framework import status, viewsets
+from rest_framework.decorators import permission_classes
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 
 from . import VARIETALS
 from .models import (
@@ -83,29 +87,45 @@ class WineryView(viewsets.ModelViewSet):
 
 
 class WineView(viewsets.ModelViewSet):
-    queryset = Wine.objects.all()
     serializer_class = WineSerializer
 
-    def create(self, request):
+    def create(self, request, winery_pk, wineline_pk):
         serializer = WineSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        wine = serializer.create(serializer.validated_data)
-        return Response({'url': reverse('wine-detail', args=[wine.id])}, status=status.HTTP_201_CREATED)
+        wine = serializer.create(serializer.validated_data, winery_pk, wineline_pk)
+        return Response({
+            'url': reverse(
+                    'wines-detail',
+                    kwargs={'winery_pk': winery_pk, 'wineline_pk': wineline_pk, 'pk': wine.id}
+                    )
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+    def get_queryset(self):
+        wine_line = get_object_or_404(WineLine, id=self.kwargs['wineline_pk'])
+        winery = get_object_or_404(Winery, id=self.kwargs['winery_pk'])
+        if wine_line.winery.id != winery.id:
+            raise PermissionDenied(detail="winery and wine line don't match")
+        return Wine.objects.filter(wine_line=wine_line.id)
 
 
 class WineLineView(viewsets.ModelViewSet):
-    queryset = WineLine.objects.all()
     serializer_class = WineLineSerializer
 
-    def create(self, request):
+    def create(self, request, winery_pk):
         serializer = WineLineSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        wine_line = serializer.create(serializer.validated_data)
+        wine_line = serializer.create(serializer.validated_data, winery_pk)
         return Response(
-            {'url': reverse('wine-line-detail', args=[wine_line.id])},
+            {'url': reverse('winelines-detail', kwargs={'winery_pk': winery_pk, 'pk': wine_line.id})},
             status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        winery = get_object_or_404(Winery, id=self.kwargs['winery_pk'])
+        return WineLine.objects.filter(winery=winery.id)
 
 
 class MapsView(APIView):
@@ -166,7 +186,7 @@ class ReservationView(viewsets.ModelViewSet):
         reservation = serializer.create(serializer.validated_data)
 
         # get event occurrency and decrement vacancies
-        event_occurrence = EventOccurrence.objects.get(pk=request.data['event_occurrence'])
+        event_occurrence = get_object_or_404(EventOccurrence, pk=request.data['event_occurrence'])
         event_occurrence.vacancies -= int(request.data['attendee_number'])
         event_occurrence.save()
         return Response(
@@ -181,18 +201,24 @@ class VarietalsView(APIView):
 
 
 class RatingView(viewsets.ModelViewSet):
-    queryset = Rate.objects.all()
     serializer_class = RateSerializer
     model_class = Rate
 
-    def create(self, request):
+    @permission_classes([IsAuthenticated])
+    def create(self, request, event_pk):
         serializer = RateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        rate = serializer.create(serializer.validated_data)
+
+        user = request.user
+        rate = serializer.create(serializer.validated_data, event_pk, user.id)
         return Response(
-            {'url': reverse('rates-detail', args=[rate.id])},
+            {'url': reverse('event-ratings-detail', kwargs={'event_pk': event_pk, 'pk': rate.id})},
             status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        event = get_object_or_404(Event, id=self.kwargs['event_pk'])
+        return Rate.objects.filter(event=event.id)
 
 
 class FileUploadView(APIView):
@@ -201,7 +227,7 @@ class FileUploadView(APIView):
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         if Winery.objects.filter(pk=serializer.validated_data['id']).exists():
-            winery = Winery.objects.get(pk=serializer.validated_data['id'])
+            winery = get_object_or_404(Winery, pk=serializer.validated_data['id'])
             for onefile in serializer.validated_data['filefield']:
                 ImagesWinery.objects.create(filefield=onefile, winery=winery)
             return Response(status=status.HTTP_201_CREATED)

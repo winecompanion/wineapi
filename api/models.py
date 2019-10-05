@@ -147,6 +147,10 @@ class Rate(models.Model):
     class Meta:
         unique_together = (('event', 'user'), )
 
+    @property
+    def user_name(self):
+        return self.user.full_name
+
 
 class Reservation(models.Model):
     attendee_number = models.PositiveIntegerField()
@@ -161,7 +165,7 @@ class Reservation(models.Model):
     event_occurrence = models.ForeignKey(EventOccurrence, on_delete=models.PROTECT)
 
     def __str__(self):
-        return str(self.id) + ": " + self.user.first_name + " " + self.user.last_name + ", " + str(self.paid_amount)
+        return '{}: {}, {}'.format(str(self.id), self.user.name, str(self.paid_amount))
 
 
 class ImagesWinery(models.Model):

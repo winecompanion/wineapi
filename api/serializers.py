@@ -2,8 +2,12 @@ from datetime import datetime
 from winecompanion import settings
 
 from django.db.models import Avg
+from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
 
+from rest_framework.exceptions import ParseError
 from rest_framework import serializers
+
 from .models import (
     Event,
     EventOccurrence,
@@ -125,10 +129,10 @@ class EventSerializer(serializers.ModelSerializer):
                     event=event
                 )
         for category in categories:
-            event.categories.add(EventCategory.objects.get(name=category['name']))
+            event.categories.add(get_object_or_404(EventCategory, name=category['name']))
 
         for tag in tags:
-            event.tags.add(Tag.objects.get(name=tag['name']))
+            event.tags.add(get_object_or_404(Tag, name=tag['name']))
 
         return event
 
@@ -139,7 +143,7 @@ class EventSerializer(serializers.ModelSerializer):
         for category in categories:
             try:
                 EventCategory.objects.get(name=category['name'])
-            except Exception:
+            except EventCategory.DoesNotExist:
                 raise serializers.ValidationError("category {} does not exist".format(category['name']))
 
         return categories
@@ -151,7 +155,7 @@ class EventSerializer(serializers.ModelSerializer):
         for tag in tags:
             try:
                 Tag.objects.get(name=tag['name'])
-            except Exception:
+            except Tag.DoesNotExist:
                 raise serializers.ValidationError("tag {} does not exist".format(tag['name']))
 
         return tags
@@ -176,18 +180,16 @@ class WineSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Wine
-        fields = ('id', 'name', 'description', 'winery', 'varietal', 'wine_line')
+        fields = ('id', 'name', 'description', 'varietal')
 
-    def validate(self, data):
-        """Validate that the wine-line if from the same winery"""
+    def create(self, data, winery_pk, wineline_pk):
+        data['wine_line_id'] = wineline_pk
+        data['winery_id'] = winery_pk
         try:
-            wine_line = WineLine.objects.get(name=data['wine_line'])
-            if wine_line.winery.id != data['winery'].id:
-                raise ValueError
-        except Exception:
-            raise serializers.ValidationError('The wine line specified does not match the same winery')
-
-        return data
+            wine = Wine.objects.create(**data)
+        except IntegrityError:
+            raise ParseError(datail='Invalid winery or wine line.')
+        return wine
 
 
 class WineLineSerializer(serializers.ModelSerializer):
@@ -197,7 +199,15 @@ class WineLineSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WineLine
-        fields = ('id', 'name', 'description', 'winery', 'wines')
+        fields = ('id', 'name', 'description', 'wines')
+
+    def create(self, data, winery_pk):
+        data['winery_id'] = winery_pk
+        try:
+            wine_line = WineLine.objects.create(**data)
+        except IntegrityError:
+            raise ParseError(detail='Invalid winery')
+        return wine_line
 
 
 class ImageUrlField(serializers.RelatedField):
@@ -282,6 +292,17 @@ class ReservationSerializer(serializers.ModelSerializer):
 
 
 class RateSerializer(serializers.ModelSerializer):
+    user_name = serializers.ReadOnlyField()
+
     class Meta:
         model = Rate
-        fields = '__all__'
+        fields = ('user_name', 'rate', 'comment')
+
+    def create(self, data, event_pk, user_pk):
+        data['event_id'] = event_pk
+        data['user_id'] = user_pk
+        try:
+            rate = Rate.objects.create(**data)
+        except IntegrityError:
+            raise ParseError(detail='Invalid event')
+        return rate
