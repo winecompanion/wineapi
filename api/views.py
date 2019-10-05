@@ -5,7 +5,7 @@ from django_filters import DateTimeFromToRangeFilter, FilterSet, ModelMultipleCh
 from django.shortcuts import get_object_or_404
 from rest_framework import filters
 from rest_framework import status, viewsets
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import action, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -84,6 +84,14 @@ class WineryView(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     search_fields = ['name', 'description']
     http_method_names = ['get', 'head', 'put', 'patch']
+
+    @action(detail=True, methods=['get'], name='get-winery-events')
+    def events(self, request, pk=None):
+        query = Event.objects.filter(
+            occurrences__start__gt=datetime.now(), winery=pk
+        ).distinct()
+        events = EventSerializer(query, many=True)
+        return Response(events.data, status=status.HTTP_200_OK)
 
 
 class WineView(viewsets.ModelViewSet):
