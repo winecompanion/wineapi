@@ -200,22 +200,20 @@ class RatingView(viewsets.ModelViewSet):
 class FileUploadView(APIView):
     def post(self, request):
         serializer = FileSerializer(data=request.data)
+        model = None
+        kwargs = {}
+
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
         if serializer.validated_data['type'] == 'winery':
-            return self.winery_upload(serializer)
-        if serializer.validated_data['type'] == 'event':
-            return self.event_upload(serializer)
-        return Response({'errors': 'Type not found'}, status=status.HTTP_400_BAD_REQUEST)
+            model = ImagesWinery
+            kwargs['winery'] = get_object_or_404(Winery, pk=serializer.validated_data['id'])
+        elif serializer.validated_data['type'] == 'event':
+            model = ImagesEvent
+            kwargs['event'] = get_object_or_404(Event, pk=serializer.validated_data['id'])
+        else:
+            return Response({'errors': 'Type not found'}, status=status.HTTP_400_BAD_REQUEST)
 
-    def winery_upload(self, serializer):
-        winery = get_object_or_404(Winery, pk=serializer.validated_data['id'])
-        for onefile in serializer.validated_data['filefield']:
-            ImagesWinery.objects.create(filefield=onefile, winery=winery)
-        return Response(status=status.HTTP_201_CREATED)
-
-    def event_upload(self, serializer):
-        event = get_object_or_404(Event, pk=serializer.validated_data['id'])
-        for onefile in serializer.validated_data['filefield']:
-            ImagesEvent.objects.create(filefield=onefile, event=event)
+        model.objects.create(**kwargs)
         return Response(status=status.HTTP_201_CREATED)
