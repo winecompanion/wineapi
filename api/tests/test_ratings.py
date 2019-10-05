@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from rest_framework import status
 
-from api.models import Event, Rate, Winery
+from api.models import Event, EventOccurrence, Rate, Winery
 from api.serializers import RateSerializer
 from users.models import WineUser
 
@@ -95,3 +95,30 @@ class TestRatings(TestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         serializer = RateSerializer(rate)
         self.assertEqual(response.data, serializer.data)
+
+    def test_get_event_user_calification(self):
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=self.event
+        )
+        self.client.force_login(self.user)
+        rate = Rate.objects.create(**self.valid_rate_creation_data)
+        response = self.client.get(
+            reverse('event-detail', kwargs={'pk': self.event.id}),
+        )
+        self.assertEqual(response.data.get('current_user_rating'), rate.rate)
+
+    def test_get_event_user_calification_not_logged_in(self):
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=self.event
+        )
+        Rate.objects.create(**self.valid_rate_creation_data)
+        response = self.client.get(
+            reverse('event-detail', kwargs={'pk': self.event.id}),
+        )
+        self.assertEqual(response.data.get('current_user_rating'), None)
