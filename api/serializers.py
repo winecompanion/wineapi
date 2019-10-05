@@ -74,6 +74,7 @@ class EventSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'cancelled',
+            'duration',
             'price',
             'rating',
             'tags',
