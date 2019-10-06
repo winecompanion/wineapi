@@ -260,11 +260,27 @@ class EventBriefSerializer(serializers.ModelSerializer):
 class EventOccurrenceSerializer(serializers.ModelSerializer):
     """Serializer for event occurrences """
     id = serializers.ReadOnlyField()
-    event = EventBriefSerializer()
+    event = EventBriefSerializer(read_only=True)
 
     class Meta:
         model = EventOccurrence
         fields = ('id', 'start', 'end', 'vacancies', 'event')
+
+    def create(self, data, event_pk):
+        event = Event.objects.filter(pk=event_pk).first()
+        if not event:
+            raise ParseError(detail='Invalid event.')
+        if event.cancelled:
+            raise serializers.ValidationError('This event is cancelled.')
+
+        data['event_id'] = event_pk
+        occurrence = EventOccurrence.objects.create(**data)
+        return occurrence
+
+    def validate(self, data):
+        if data['start'] >= data['end']:
+            raise serializers.ValidationError({'end': ['end date must be greater than start date']})
+        return data
 
 
 class ReservationSerializer(serializers.ModelSerializer):
@@ -318,5 +334,5 @@ class RateSerializer(serializers.ModelSerializer):
         try:
             rate = Rate.objects.create(**data)
         except IntegrityError:
-            raise ParseError(detail='Invalid event')
+            raise ParseError(detail='Invalid event.')
         return rate

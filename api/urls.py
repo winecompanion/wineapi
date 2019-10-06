@@ -5,6 +5,7 @@ from rest_framework_nested import routers
 from api.views import (
     EventsView,
     EventCategoryView,
+    EventOccurrencesView,
     FileUploadView,
     MapsView,
     RatingView,
@@ -35,6 +36,9 @@ ratings_router = routers.NestedDefaultRouter(router, r'events', lookup='event')
 ratings_router.register(r'ratings', RatingView, basename='event-ratings')
 # router.register(r'rates', RatingView, basename='rates')
 
+event_occurrences_router = routers.NestedDefaultRouter(router, r'events', lookup='event')
+event_occurrences_router.register(r'occurrences', EventOccurrencesView, basename='event-occurrences')
+
 router.register(r'tags', TagView, basename='tags')
 router.register(r'event-categories', EventCategoryView, basename='event-categories')
 router.register(r'reservations', ReservationView, basename='reservations')
@@ -44,6 +48,7 @@ urlpatterns = [
     path('', include(wine_lines_router.urls)),
     path('', include(wines_router.urls)),
     path('', include(ratings_router.urls)),
+    path('', include(event_occurrences_router.urls)),
     path('maps/', MapsView.as_view()),
     path('restaurants/', RestaurantsView.as_view(), name='restaurants'),
     path('varietals/', VarietalsView.as_view(), name='varietals'),

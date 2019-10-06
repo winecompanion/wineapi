@@ -28,6 +28,7 @@ from .models import (
 )
 from .serializers import (
     EventCategorySerializer,
+    EventOccurrenceSerializer,
     EventSerializer,
     RateSerializer,
     ReservationSerializer,
@@ -262,3 +263,22 @@ class RestaurantsView(APIView):
 
         restaurants = EventSerializer(query, many=True)
         return Response(restaurants.data, status=status.HTTP_200_OK)
+
+
+class EventOccurrencesView(viewsets.ModelViewSet):
+    serializer_class = EventOccurrenceSerializer
+    model_class = EventOccurrence
+
+    def create(self, request, event_pk):
+        serializer = EventOccurrenceSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        occurrence = serializer.create(serializer.validated_data, event_pk)
+        return Response(
+            {'url': reverse('event-occurrences-detail', kwargs={'event_pk': event_pk, 'pk': occurrence.id})},
+            status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        event = get_object_or_404(Event, id=self.kwargs['event_pk'])
+        return EventOccurrence.objects.filter(event=event.id)
