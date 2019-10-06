@@ -7,7 +7,7 @@ from rest_framework import status
 from parameterized import parameterized
 
 from api.models import Event, EventCategory, EventOccurrence, Tag, Winery
-from api.serializers import EventSerializer
+from api.serializers import EventSerializer, EventOccurrenceSerializer
 
 
 MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY = list(range(7))
@@ -610,3 +610,34 @@ class TestEvents(TestCase):
 
         self.assertIn(serializer1.data, res.data)
         self.assertNotIn(serializer2.data, res.data)
+
+    def test_event_get_occurrences(self):
+        event = Event.objects.create(name='Test Event', description='Desc 1', winery=self.winery, price=0.0)
+        occurrence = EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event
+        )
+        res = self.client.get(
+            reverse('event-occurrences-list', kwargs={'event_pk': event.id}),
+        )
+        serializer = EventOccurrenceSerializer(occurrence)
+        self.assertIn(serializer.data, res.data)
+
+    def test_event_occurrences_post(self):
+        event = Event.objects.create(name='Test Event', description='Desc 1', winery=self.winery, price=0.0)
+        res = self.client.post(
+            reverse('event-occurrences-list', kwargs={'event_pk': event.id}),
+            {
+                'start': '2030-05-31T20:00:00',
+                'end': '2030-05-31T23:00:00',
+                'vacancies': 50,
+                'event': event,
+            }
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            res.data.get('url'),
+            reverse('event-occurrences-detail', kwargs={'event_pk': event.id, 'pk': 1})
+        )
