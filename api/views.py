@@ -250,7 +250,8 @@ class FileUploadView(APIView):
         else:
             return Response({'errors': 'Type not found'}, status=status.HTTP_400_BAD_REQUEST)
 
-        model.objects.create(**kwargs)
+        for onefile in serializer.validated_data['filefield']:
+            model.objects.create(filefield=onefile, **kwargs)
         return Response(status=status.HTTP_201_CREATED)
 
 

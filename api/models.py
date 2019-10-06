@@ -169,7 +169,7 @@ class Reservation(models.Model):
 
 
 class ImagesWinery(models.Model):
-    filefield = models.FileField()
+    filefield = models.FileField(blank=False, null=False, default='')
     winery = models.ForeignKey(
         Winery,
         related_name='images',
@@ -178,7 +178,7 @@ class ImagesWinery(models.Model):
 
 
 class ImagesEvent(models.Model):
-    filefield = models.FileField()
+    filefield = models.FileField(blank=False, null=False, default='')
     event = models.ForeignKey(
         Event,
         related_name='images',
