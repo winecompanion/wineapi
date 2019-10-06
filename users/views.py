@@ -1,8 +1,11 @@
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from .models import WineUser, UserSerializer
+from api.models import Reservation
+from api.serializers import ReservationSerializer
 
 
 class WineUserView(viewsets.ModelViewSet):
@@ -15,3 +18,11 @@ class WineUserView(viewsets.ModelViewSet):
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         wine_user = serializer.create(serializer.validated_data)
         return Response({'url': reverse('users-detail', args=[wine_user.id])}, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'], name='get-user-reservations')
+    def reservations(self, request):
+        if request.user.is_anonymous:
+            return Response([], status=status.HTTP_200_OK)
+        res = Reservation.objects.filter(user=request.user.id).order_by('-id')
+        reservations = ReservationSerializer(res, many=True)
+        return Response(reservations.data, status=status.HTTP_200_OK)

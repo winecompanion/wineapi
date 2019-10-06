@@ -23,6 +23,7 @@ class TestEvents(TestCase):
         self.category1 = EventCategory.objects.create(name="Tour")
         self.category2 = EventCategory.objects.create(name="Food")
         self.category3 = EventCategory.objects.create(name="Wine tasting")
+        self.category_restaurant = EventCategory.objects.create(name="Restaurant")
         self.valid_data = {
             "one_schedule_no_to_date": {
                 "name": "TEST_EVENT_NAME",
@@ -513,3 +514,99 @@ class TestEvents(TestCase):
                     for occurrence in res.data['occurrences']]
             )
         )
+
+    def test_get_winery_events(self):
+        event = Event.objects.create(
+            name='Event from winery',
+            description='Should be shown',
+            winery=self.winery,
+            price=0.0
+        )
+        other_winery = Winery.objects.create(
+                name='Other Winery',
+                description='test',
+                website='test.com',
+        )
+        event_from_other_winery = Event.objects.create(
+            name='Other Winery Event',
+            description='Should not be shown',
+            winery=other_winery,
+            price=0.0
+        )
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event
+        )
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event_from_other_winery
+        )
+
+        res = self.client.get(
+            reverse('winery-events', kwargs={'pk': self.winery.id}),
+        )
+        serializer_event = EventSerializer(event)
+        serializer_event_from_other_winery = EventSerializer(event_from_other_winery)
+
+        self.assertIn(serializer_event.data, res.data)
+        self.assertNotIn(serializer_event_from_other_winery.data, res.data)
+
+    def test_events_endpoints_exclude_restaurants(self):
+        """Test returning events without restaurant category"""
+        event1 = Event.objects.create(name='Evento 1', description='Desc 1', winery=self.winery, price=0.0)
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event1
+        )
+        event2 = Event.objects.create(name='Restaurante', description='Desc 1', winery=self.winery, price=0.0)
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event2
+        )
+        event1.categories.add(self.category1)
+        event1.categories.add(self.category2)
+        event2.categories.add(self.category_restaurant)
+        res = self.client.get(
+            '/api/events/'
+        )
+        serializer1 = EventSerializer(event1)
+        serializer2 = EventSerializer(event2)
+
+        self.assertIn(serializer1.data, res.data)
+        self.assertNotIn(serializer2.data, res.data)
+
+    def test_restaurants_endpoint(self):
+        """Test that the endpoint only returns events with restaurant categories"""
+        event1 = Event.objects.create(name='Restaurante', description='Desc 1', winery=self.winery, price=0.0)
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event1
+        )
+        event2 = Event.objects.create(name='Evento 1', description='Desc 1', winery=self.winery, price=0.0)
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event2
+        )
+        event1.categories.add(self.category_restaurant)
+        event2.categories.add(self.category1)
+        event2.categories.add(self.category2)
+        res = self.client.get(
+            reverse('restaurants'),
+        )
+        serializer1 = EventSerializer(event1)
+        serializer2 = EventSerializer(event2)
+
+        self.assertIn(serializer1.data, res.data)
+        self.assertNotIn(serializer2.data, res.data)

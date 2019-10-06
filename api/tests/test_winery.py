@@ -87,7 +87,7 @@ class TestWines(TestCase):
             'varietal': '1',
             'wine_line': self.wine_line,
         }
-        self.wine_required_fields = set(['name', 'winery', 'wine_line'])
+        self.wine_required_fields = set(['name', ])
 
     def test_wine_creation(self):
         wine = Wine(**self.wine_creation_data)
@@ -98,12 +98,12 @@ class TestWines(TestCase):
         wine = Wine(**self.invalid_wine_data)
         with self.assertRaises(ValidationError) as context:
             wine.full_clean()
-        self.assertEqual(set(context.exception.error_dict), self.wine_required_fields)
+        self.assertEqual(set(context.exception.error_dict), set(['name', 'winery', 'wine_line']))
 
     def test_wine_serializer(self):
         serializer = WineSerializer(data=self.valid_wine_data)
         self.assertTrue(serializer.is_valid())
-        wine_fields = ['name', 'description', 'winery', 'varietal', 'wine_line']
+        wine_fields = ['name', 'description', 'varietal']
         self.assertEqual(set(serializer.data.keys()), set(wine_fields))
 
     def test_invalid_wine_serializer(self):
@@ -111,41 +111,22 @@ class TestWines(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors), self.wine_required_fields)
 
-    def test_invalid_wine_creation_serializer(self):
-        """Test that when creating a wine the wine line is from the same winery"""
-        data = self.valid_wine_data
-        winery = Winery.objects.create(
-                name='Other winery',
-                description='Other',
-        )
-        wineline = WineLine.objects.create(
-            name='From other winery',
-            winery=winery,
-        )
-        data['wine_line'] = wineline.id
-        serializer = WineSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-        self.assertEqual(
-            set(serializer.errors['non_field_errors']),
-            set(['The wine line specified does not match the same winery'])
-        )
-
     def test_wine_endpoint_get(self):
         response = self.client.get(
-            reverse('wine-list')
+            reverse('wines-list', kwargs={'winery_pk': self.winery.id, 'wineline_pk': self.wine_line.id})
         )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_wine_endpoint_create(self):
         response = self.client.post(
-            reverse('wine-list'),
+            reverse('wines-list', kwargs={'winery_pk': self.winery.id, 'wineline_pk': self.wine_line.id}),
             self.valid_wine_data
         )
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_wine_endpoint_create_with_invalid_data(self):
         response = self.client.post(
-            reverse('wine-list'),
+            reverse('wines-list', kwargs={'winery_pk': self.winery.id, 'wineline_pk': self.wine_line.id}),
             self.invalid_wine_data
         )
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -154,7 +135,10 @@ class TestWines(TestCase):
     def test_wine_detail_get(self):
         wine = Wine.objects.create(**self.wine_creation_data)
         response = self.client.get(
-            reverse('wine-detail', kwargs={'pk': wine.id})
+            reverse(
+                'wines-detail',
+                kwargs={'winery_pk': self.winery.id, 'wineline_pk': self.wine_line.id, 'pk': wine.id}
+            )
         )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         serializer = WineSerializer(wine)
@@ -188,7 +172,7 @@ class TestWineLines(TestCase):
         self.invalid_wineline_data = {
                 'description': 'description',
         }
-        self.wineline_required_fields = set(['name', 'winery'])
+        self.wineline_required_fields = set(['name', ])
         self.client = Client()
 
     def test_wineline_creation(self):
@@ -200,12 +184,12 @@ class TestWineLines(TestCase):
         wineline = WineLine(**self.invalid_wineline_data)
         with self.assertRaises(ValidationError) as context:
             wineline.full_clean()
-        self.assertEqual(set(context.exception.error_dict), self.wineline_required_fields)
+        self.assertEqual(set(context.exception.error_dict), set(['name', 'winery']))
 
     def test_wineline_serializer(self):
         serializer = WineLineSerializer(data=self.valid_wineline_data)
         self.assertTrue(serializer.is_valid())
-        wine_line_fields = ['name', 'description', 'winery']
+        wine_line_fields = ['name', 'description']
         self.assertEqual(set(serializer.data.keys()), set(wine_line_fields))
 
     def test_invalid_wineline_serializer(self):
@@ -215,20 +199,20 @@ class TestWineLines(TestCase):
 
     def test_wineline_endpoint_get(self):
         response = self.client.get(
-            reverse('wine-line-list'),
+            reverse('winelines-list', kwargs={'winery_pk': self.winery.id}),
         )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_wineline_endpoint_create(self):
         response = self.client.post(
-            reverse('wine-line-list'),
+            reverse('winelines-list', kwargs={'winery_pk': self.winery.id}),
             self.valid_wineline_data
         )
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_wineline_endpoint_create_with_invalid_data(self):
         response = self.client.post(
-            reverse('wine-line-list'),
+            reverse('winelines-list', kwargs={'winery_pk': self.winery.id}),
             self.invalid_wineline_data
         )
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -237,7 +221,7 @@ class TestWineLines(TestCase):
     def test_wineline_detail_get(self):
         wine_line = WineLine.objects.create(**self.wine_line_creation_data)
         response = self.client.get(
-            reverse('wine-line-detail', kwargs={'pk': wine_line.id})
+            reverse('winelines-detail', kwargs={'winery_pk': self.winery.id, 'pk': wine_line.id})
         )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         serializer = WineLineSerializer(wine_line)
