@@ -24,6 +24,7 @@ from .models import (
     WineLine,
     Winery,
     ImagesWinery,
+    ImagesEvent,
 )
 from .serializers import (
     EventCategorySerializer,
@@ -235,15 +236,22 @@ class RatingView(viewsets.ModelViewSet):
 class FileUploadView(APIView):
     def post(self, request):
         serializer = FileSerializer(data=request.data)
+        model = None
+        kwargs = {}
+
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        if Winery.objects.filter(pk=serializer.validated_data['id']).exists():
-            winery = get_object_or_404(Winery, pk=serializer.validated_data['id'])
-            for onefile in serializer.validated_data['filefield']:
-                ImagesWinery.objects.create(filefield=onefile, winery=winery)
-            return Response(status=status.HTTP_201_CREATED)
+        if serializer.validated_data['type'] == 'winery':
+            model = ImagesWinery
+            kwargs['winery'] = get_object_or_404(Winery, pk=serializer.validated_data['id'])
+        elif serializer.validated_data['type'] == 'event':
+            model = ImagesEvent
+            kwargs['event'] = get_object_or_404(Event, pk=serializer.validated_data['id'])
         else:
-            return Response({'errors': 'Winery not found '}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'errors': 'Type not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        model.objects.create(**kwargs)
+        return Response(status=status.HTTP_201_CREATED)
 
 
 class RestaurantsView(APIView):
