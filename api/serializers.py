@@ -184,7 +184,7 @@ class EventSerializer(serializers.ModelSerializer):
         if request and not request.user.is_anonymous:
             user = request.user
             rate = Rate.objects.filter(event=event, user=user).first()
-            return getattr(rate, 'rate')
+            return getattr(rate, 'rate', None)
 
         return None
 
