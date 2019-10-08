@@ -260,8 +260,7 @@ class RestaurantsView(APIView):
     def get(self, request):
         query = Event.objects.filter(
             occurrences__start__gt=datetime.now(), categories__name__icontains='restaurant'
-        ).distinct().order_by('occurrences__start')
-
+        ).distinct()
         restaurants = EventSerializer(query, many=True)
         return Response(restaurants.data, status=status.HTTP_200_OK)
 
