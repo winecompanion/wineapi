@@ -100,7 +100,7 @@ class WineryView(viewsets.ModelViewSet):
         events = EventSerializer(query, many=True)
         return Response(events.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'], name='get-winery-events')
+    @action(detail=True, methods=['get'], name='get-winery-restaurants')
     def restaurants(self, request, pk=None):
         query = Event.objects.filter(
             occurrences__start__gt=datetime.now(),
@@ -292,13 +292,10 @@ class FileUploadView(APIView):
         return Response(status=status.HTTP_201_CREATED)
 
 
-class RestaurantsView(APIView):
-    def get(self, request):
-        query = Event.objects.filter(
-            occurrences__start__gt=datetime.now(), categories__name__icontains='restaurant'
-        ).distinct()
-        restaurants = EventSerializer(query, many=True)
-        return Response(restaurants.data, status=status.HTTP_200_OK)
+class RestaurantsView(EventsView):
+    queryset = Event.objects.filter(
+        occurrences__start__gt=datetime.now(), categories__name__icontains='restaurant'
+    ).distinct()
 
 
 class EventOccurrencesView(viewsets.ModelViewSet):
@@ -317,4 +314,28 @@ class EventOccurrencesView(viewsets.ModelViewSet):
 
     def get_queryset(self):
         event = get_object_or_404(Event, id=self.kwargs['event_pk'])
+        return EventOccurrence.objects.filter(event=event.id)
+
+
+class RestaurantOccurrencesView(viewsets.ModelViewSet):
+    serializer_class = EventOccurrenceSerializer
+    model_class = EventOccurrence
+
+    def create(self, request, restaurant_pk):
+        serializer = EventOccurrenceSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        occurrence = serializer.create(serializer.validated_data, restaurant_pk)
+        return Response(
+            {
+                'url': reverse(
+                    'restaurant-occurrences-detail',
+                    kwargs={'restaurant_pk': restaurant_pk, 'pk': occurrence.id}
+                )
+            },
+            status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        event = get_object_or_404(Event, id=self.kwargs['restaurant_pk'])
         return EventOccurrence.objects.filter(event=event.id)
