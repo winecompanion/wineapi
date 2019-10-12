@@ -180,6 +180,11 @@ class EventSerializer(serializers.ModelSerializer):
 
         return tags
 
+    def validate_vacancies(self, vacancies):
+        if vacancies <= 0:
+            raise serializers.ValidationError('The vacancies must be greater than cero.')
+        return vacancies
+
     def get_occurrences(self, event):
         occurrences = EventOccurrence.objects.filter(event=event, start__gt=datetime.now())
         serializer = VenueSerializer(instance=occurrences, many=True)
@@ -312,7 +317,13 @@ class ReservationSerializer(serializers.ModelSerializer):
             'paid_amount',
             'user',
             'event_occurrence',
+            'status',
         )
+
+    def validate_attendee_number(self, attendee_number):
+        if attendee_number <= 0:
+            raise serializers.ValidationError('The attendee_number must be greater than cero')
+        return attendee_number
 
     def validate(self, data):
         """
@@ -332,6 +343,7 @@ class ReservationSerializer(serializers.ModelSerializer):
     # Override serialization of event_occurrence only when readed
     def to_representation(self, obj):
         self.fields['event_occurrence'] = EventOccurrenceSerializer()
+        self.fields['status'] = serializers.CharField(source='get_status_display')
         return super().to_representation(obj)
 
 

@@ -74,7 +74,7 @@ class TestReservation(TestCase):
         serializer = ReservationSerializer(data=self.valid_reservation_json_data)
         self.assertTrue(serializer.is_valid())
         reservation_fields = ['attendee_number', 'observations', 'paid_amount', 'user', 'event_occurrence']
-        self.assertEqual(set(serializer.data.keys()), set(reservation_fields))
+        self.assertEqual(set(serializer.validated_data.keys()), set(reservation_fields))
 
     def test_invalid_reservation_serializer(self):
         serializer = ReservationSerializer(data=self.invalid_reservation_data)
@@ -183,3 +183,18 @@ class TestReservation(TestCase):
             reverse('users-reservations')
         )
         self.assertEqual(response.data, [])
+
+    def test_get_reservation_available_status(self):
+        expected = [
+            {'id': 1, 'value': 'Created'},
+            {'id': 2, 'value': 'Confirmed'},
+            {'id': 3, 'value': 'Rejected'},
+            {'id': 4, 'value': 'Cancelled'},
+            {'id': 5, 'value': 'Paid Out'}
+        ]
+
+        response = self.client.get(
+            reverse('reservations-get-available-status')
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected)
