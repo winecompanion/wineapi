@@ -9,10 +9,17 @@ from .models import WineUser, UserSerializer
 from api.models import Reservation
 from api.serializers import ReservationSerializer
 
+from .permissions import (
+    AllowCreateUserButUpdateOwnerOnly,
+    ListAdminOnly,
+)
+
 
 class WineUserView(viewsets.ModelViewSet):
     queryset = WineUser.objects.all()
     serializer_class = UserSerializer
+
+    permission_classes = [ListAdminOnly, AllowCreateUserButUpdateOwnerOnly]
 
     def create(self, request):
         serializer = UserSerializer(data=request.data)

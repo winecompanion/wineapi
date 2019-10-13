@@ -93,6 +93,12 @@ class TestUser(TestCase):
         self.assertEqual(set(serializer.errors), self.users_required_fields)
 
     def test_users_endpoint_get(self):
+        user = WineUser.objects.create_user(
+            email='testuser@winecompanion.com',
+            password='1234',
+            is_staff=True
+        )
+        self.client.force_login(user)
         response = self.client.get(
             reverse('users-list'),
         )
@@ -115,6 +121,8 @@ class TestUser(TestCase):
 
     def test_users_detail_get(self):
         user = WineUser.objects.create(**self.valid_user_creation_data)
+        self.client.force_login(user)
+
         response = self.client.get(
             reverse('users-detail', kwargs={'pk': user.id})
         )

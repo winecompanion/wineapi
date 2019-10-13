@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 
 from rest_framework import status
 
+from users.models import WineUser
 from api import VARIETALS
 from api.models import Winery, WineLine, Wine
 from api.serializers import WinerySerializer, WineLineSerializer, WineSerializer
@@ -56,7 +57,7 @@ class TestWinery(TestCase):
             reverse('winery-list'),
             data
         )
-        self.assertEqual(status.HTTP_405_METHOD_NOT_ALLOWED, response.status_code)
+        self.assertEqual(status.HTTP_401_UNAUTHORIZED, response.status_code)
 
 
 class TestWines(TestCase):
@@ -65,6 +66,10 @@ class TestWines(TestCase):
                 name='Bodega1',
                 description='Test Bodega',
                 website='webpage.com',
+        )
+        self.user = WineUser.objects.create(
+            email='testuser@winecompanion.com',
+            winery=self.winery,
         )
         self.wine_line = WineLine.objects.create(
             name='Example Wine Line',
@@ -118,6 +123,7 @@ class TestWines(TestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_wine_endpoint_create(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('wines-list', kwargs={'winery_pk': self.winery.id, 'wineline_pk': self.wine_line.id}),
             self.valid_wine_data
@@ -125,6 +131,7 @@ class TestWines(TestCase):
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_wine_endpoint_create_with_invalid_data(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('wines-list', kwargs={'winery_pk': self.winery.id, 'wineline_pk': self.wine_line.id}),
             self.invalid_wine_data
@@ -158,6 +165,10 @@ class TestWineLines(TestCase):
                 name='Bodega1',
                 description='Test Bodega',
                 website='webpage.com',
+        )
+        self.user = WineUser.objects.create(
+            email='testuser@winecompanion.com',
+            winery=self.winery,
         )
         self.wine_line_creation_data = {
                 'name': 'Wine Line',
@@ -204,6 +215,7 @@ class TestWineLines(TestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_wineline_endpoint_create(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('winelines-list', kwargs={'winery_pk': self.winery.id}),
             self.valid_wineline_data
@@ -211,6 +223,7 @@ class TestWineLines(TestCase):
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_wineline_endpoint_create_with_invalid_data(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('winelines-list', kwargs={'winery_pk': self.winery.id}),
             self.invalid_wineline_data

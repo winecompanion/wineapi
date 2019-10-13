@@ -85,6 +85,7 @@ class TestRatings(TestCase):
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_rate_endpoint_create_with_invalid_data(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('event-ratings-list', kwargs={'event_pk': self.event.id}),
             self.invalid_rate_data
