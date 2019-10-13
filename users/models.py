@@ -6,10 +6,10 @@ from rest_framework import serializers
 from django.utils import timezone
 from django.db import models
 
-from api.models import Winery
+from api.models import Winery, Country
 from api.serializers import WinerySerializer
 
-from . import TOURIST, WINERY
+from . import GENDERS, LANGUAGES, TOURIST, WINERY
 
 
 USER_TYPE_CHOICES = [
@@ -64,11 +64,15 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
     user_type = models.CharField(max_length=20, blank=True, choices=USER_TYPE_CHOICES, default=TOURIST)
 
     winery = models.ForeignKey('api.winery', null=True, blank=True, on_delete=models.CASCADE)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    gender = models.IntegerField(choices=GENDERS)
+    language = models.IntegerField(choices=LANGUAGES)
+    phone = models.CharField(max_length=15)
 
     objects = WineUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'country', 'language', 'gender', 'phone']
 
     def __str__(self):
         return self.email
@@ -85,7 +89,20 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ('id', 'email', 'password', 'first_name', 'last_name', 'birth_date', 'winery', 'user_type')
+        fields = (
+            'id',
+            'email',
+            'password',
+            'first_name',
+            'last_name',
+            'birth_date',
+            'gender',
+            'country',
+            'language',
+            'phone',
+            'winery',
+            'user_type',
+        )
         extra_kwargs = {
             'password': {
                 'write_only': True,

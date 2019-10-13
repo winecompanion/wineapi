@@ -9,6 +9,7 @@ from rest_framework.exceptions import ParseError
 from rest_framework import serializers
 
 from .models import (
+    Country,
     Event,
     EventOccurrence,
     Winery,
@@ -46,6 +47,15 @@ class TagSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
+        fields = ['id', 'name']
+
+
+class CountrySerializer(serializers.ModelSerializer):
+    """Serializer for Countries"""
+    id = serializers.ReadOnlyField
+
+    class Meta:
+        model = Country
         fields = ['id', 'name']
 
 
