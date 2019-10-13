@@ -83,7 +83,7 @@ class TestUser(TestCase):
         serializer = UserSerializer(data=self.valid_user_post_data)
         serializer.is_valid()
         # In this case, we don't want the serializer to return the password since it's read only.
-        self.assertEqual(set(serializer.data.keys()), self.serializer_fields)
+        self.assertEqual(set(serializer.validated_data.keys()), self.users_required_fields)
 
     def test_invalid_user_serializer(self):
         """Test required fields"""

@@ -220,6 +220,10 @@ class WineSerializer(serializers.ModelSerializer):
             raise ParseError(datail='Invalid winery or wine line.')
         return wine
 
+    def to_representation(self, obj):
+        self.fields['varietal'] = serializers.CharField(source='get_varietal_display')
+        return super().to_representation(obj)
+
 
 class WineLineSerializer(serializers.ModelSerializer):
     """Serializes a wine line for the api endpoint"""
@@ -333,10 +337,11 @@ class ReservationSerializer(serializers.ModelSerializer):
 
 class RateSerializer(serializers.ModelSerializer):
     user_name = serializers.ReadOnlyField()
+    date = serializers.DateTimeField(source='modified', read_only=True)
 
     class Meta:
         model = Rate
-        fields = ('user_name', 'rate', 'comment')
+        fields = ('user_name', 'date', 'rate', 'comment')
 
     def create(self, data, event_pk, user_pk):
         data['event_id'] = event_pk
@@ -344,5 +349,5 @@ class RateSerializer(serializers.ModelSerializer):
         try:
             rate = Rate.objects.create(**data)
         except IntegrityError:
-            raise ParseError(detail='Invalid event.')
+            raise ParseError(detail='invalid event.')
         return rate

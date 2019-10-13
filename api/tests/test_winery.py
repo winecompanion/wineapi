@@ -104,7 +104,7 @@ class TestWines(TestCase):
         serializer = WineSerializer(data=self.valid_wine_data)
         self.assertTrue(serializer.is_valid())
         wine_fields = ['name', 'description', 'varietal']
-        self.assertEqual(set(serializer.data.keys()), set(wine_fields))
+        self.assertEqual(set(serializer.validated_data.keys()), set(wine_fields))
 
     def test_invalid_wine_serializer(self):
         serializer = WineSerializer(data=self.invalid_wine_data)
