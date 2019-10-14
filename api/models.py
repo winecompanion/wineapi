@@ -94,7 +94,7 @@ class Event(models.Model):
     name = models.CharField(max_length=80)
     description = models.TextField()
     cancelled = models.DateTimeField(null=True, blank=True)
-    winery = models.ForeignKey(Winery, on_delete=models.PROTECT)
+    winery = models.ForeignKey(Winery, on_delete=models.PROTECT, related_name='events')
     categories = models.ManyToManyField(EventCategory)
     tags = models.ManyToManyField(Tag, blank=True)
     price = models.DecimalField(
@@ -163,9 +163,6 @@ class Reservation(models.Model):
     )
     user = models.ForeignKey('users.wineuser', on_delete=models.PROTECT)
     event_occurrence = models.ForeignKey(EventOccurrence, on_delete=models.PROTECT)
-
-    def __str__(self):
-        return '{}: {}, {}'.format(str(self.id), self.user.name, str(self.paid_amount))
 
 
 class ImagesWinery(models.Model):
