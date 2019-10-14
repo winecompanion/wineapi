@@ -180,6 +180,11 @@ class EventSerializer(serializers.ModelSerializer):
 
         return tags
 
+    def validate_vacancies(self, vacancies):
+        if vacancies <= 0:
+            raise serializers.ValidationError('The vacancies must be greater than cero.')
+        return vacancies
+
     def get_occurrences(self, event):
         occurrences = EventOccurrence.objects.filter(event=event, start__gt=datetime.now())
         serializer = VenueSerializer(instance=occurrences, many=True)
@@ -191,12 +196,11 @@ class EventSerializer(serializers.ModelSerializer):
 
     def get_current_user_rating(self, event):
         request = self.context.get("request")
-        if request and not request.user.is_anonymous:
-            user = request.user
-            rate = Rate.objects.filter(event=event, user=user).first()
-            return getattr(rate, 'rate', None)
-
-        return None
+        if not request or request.user.is_anonymous:
+            return None
+        user = request.user
+        rate = Rate.objects.filter(event=event, user=user).first()
+        return RateSerializer(rate).data if rate else None
 
     def to_representation(self, obj):
         self.fields['winery'] = serializers.SlugRelatedField(read_only=True, slug_field='name')
@@ -314,6 +318,11 @@ class ReservationSerializer(serializers.ModelSerializer):
             'event_occurrence',
         )
 
+    def validate_attendee_number(self, attendee_number):
+        if attendee_number <= 0:
+            raise serializers.ValidationError('The attendee_number must be greater than cero')
+        return attendee_number
+
     def validate(self, data):
         """
         Other validations
@@ -332,16 +341,18 @@ class ReservationSerializer(serializers.ModelSerializer):
     # Override serialization of event_occurrence only when readed
     def to_representation(self, obj):
         self.fields['event_occurrence'] = EventOccurrenceSerializer()
+        self.fields['status'] = serializers.CharField(source='get_status_display')
         return super().to_representation(obj)
 
 
 class RateSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField()
     user_name = serializers.ReadOnlyField()
     date = serializers.DateTimeField(source='modified', read_only=True)
 
     class Meta:
         model = Rate
-        fields = ('user_name', 'date', 'rate', 'comment')
+        fields = ('id', 'user_id', 'user_name', 'date', 'rate', 'comment')
 
     def create(self, data, event_pk, user_pk):
         data['event_id'] = event_pk

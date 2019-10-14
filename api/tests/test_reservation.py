@@ -3,6 +3,7 @@ from django.urls import reverse
 
 from rest_framework import status
 
+from api import RESERVATION_CONFIRMED, RESERVATION_CANCELLED
 from api.models import Country, Event, EventOccurrence, Reservation, Winery
 from api.serializers import ReservationSerializer
 
@@ -74,7 +75,7 @@ class TestReservation(TestCase):
         serializer = ReservationSerializer(data=self.valid_reservation_json_data)
         self.assertTrue(serializer.is_valid())
         reservation_fields = ['attendee_number', 'observations', 'paid_amount', 'user', 'event_occurrence']
-        self.assertEqual(set(serializer.data.keys()), set(reservation_fields))
+        self.assertEqual(set(serializer.validated_data.keys()), set(reservation_fields))
 
     def test_invalid_reservation_serializer(self):
         serializer = ReservationSerializer(data=self.invalid_reservation_data)
@@ -183,3 +184,15 @@ class TestReservation(TestCase):
             reverse('users-reservations')
         )
         self.assertEqual(response.data, [])
+
+    def test_get_reservation_status(self):
+
+        reservation = Reservation.objects.create(**self.valid_creation_data)
+        self.assertEqual(reservation.status, RESERVATION_CONFIRMED)
+
+        response = self.client.post(
+            reverse('reservations-cancel-reservation', kwargs={'pk': reservation.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.status, RESERVATION_CANCELLED)

@@ -555,6 +555,52 @@ class TestEvents(TestCase):
         self.assertIn(serializer_event.data, res.data)
         self.assertNotIn(serializer_event_from_other_winery.data, res.data)
 
+    def test_get_winery_restaurants(self):
+        event = Event.objects.create(
+            name='Event from winery',
+            description='Should be shown',
+            winery=self.winery,
+            price=0.0
+        )
+        event.categories.add(self.category_restaurant)
+        event.save()
+
+        other_winery = Winery.objects.create(
+                name='Other Winery',
+                description='test',
+                website='test.com',
+        )
+        event_from_other_winery = Event.objects.create(
+            name='Other Winery Event',
+            description='Should not be shown',
+            winery=other_winery,
+            price=0.0
+        )
+        event_from_other_winery.categories.add(self.category_restaurant)
+        event_from_other_winery.save()
+
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event
+        )
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event_from_other_winery
+        )
+
+        res = self.client.get(
+            reverse('winery-restaurants', kwargs={'pk': self.winery.id}),
+        )
+        serializer_event = EventSerializer(event)
+        serializer_event_from_other_winery = EventSerializer(event_from_other_winery)
+
+        self.assertIn(serializer_event.data, res.data)
+        self.assertNotIn(serializer_event_from_other_winery.data, res.data)
+
     def test_events_endpoints_exclude_restaurants(self):
         """Test returning events without restaurant category"""
         event1 = Event.objects.create(name='Evento 1', description='Desc 1', winery=self.winery, price=0.0)

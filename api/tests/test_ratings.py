@@ -113,7 +113,7 @@ class TestRatings(TestCase):
         response = self.client.get(
             reverse('event-detail', kwargs={'pk': self.event.id}),
         )
-        self.assertEqual(response.data.get('current_user_rating'), rate.rate)
+        self.assertEqual(response.data.get('current_user_rating'), RateSerializer(rate).data)
 
     def test_get_event_user_calification_not_logged_in(self):
         EventOccurrence.objects.create(

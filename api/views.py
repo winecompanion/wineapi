@@ -12,7 +12,7 @@ from rest_framework.reverse import reverse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from . import VARIETALS
+from . import RESERVATION_CANCELLED, VARIETALS
 from .models import (
     Country,
     Event,
@@ -95,10 +95,20 @@ class WineryView(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], name='get-winery-events')
     def events(self, request, pk=None):
         query = Event.objects.filter(
-            occurrences__start__gt=datetime.now(), winery=pk
-        ).distinct()
+            occurrences__start__gt=datetime.now(), winery=pk,
+        ).exclude(categories__name__icontains='restaurant').distinct()
         events = EventSerializer(query, many=True)
         return Response(events.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], name='get-winery-events')
+    def restaurants(self, request, pk=None):
+        query = Event.objects.filter(
+            occurrences__start__gt=datetime.now(),
+            categories__name__icontains='restaurant',
+            winery=pk,
+        ).distinct()
+        restaurants = EventSerializer(query, many=True)
+        return Response(restaurants.data, status=status.HTTP_200_OK)
 
 
 class WineView(viewsets.ModelViewSet):
@@ -224,6 +234,13 @@ class ReservationView(viewsets.ModelViewSet):
         return Response(
             {'url': reverse('reservations-detail', args=[reservation.id])},
             status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], name='cancel-reservation')
+    def cancel_reservation(self, request, pk):
+        reservation = get_object_or_404(Reservation, id=pk)
+        reservation.status = RESERVATION_CANCELLED
+        reservation.save()
+        return Response({'detail': 'The reservation has been cancelled'}, status=status.HTTP_200_OK)
 
 
 class VarietalsView(APIView):

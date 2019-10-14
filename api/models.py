@@ -7,7 +7,7 @@ from django.contrib.gis.measure import Distance
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 
-from . import VARIETALS
+from . import RESERVATION_STATUS, RESERVATION_CONFIRMED, VARIETALS
 
 
 class Country(models.Model):
@@ -131,7 +131,7 @@ class Event(models.Model):
 class EventOccurrence(models.Model):
     start = models.DateTimeField()
     end = models.DateTimeField()
-    vacancies = models.IntegerField()
+    vacancies = models.PositiveIntegerField()
     event = models.ForeignKey(
         Event,
         related_name='occurrences',
@@ -162,7 +162,7 @@ class Rate(models.Model):
 class Reservation(models.Model):
     attendee_number = models.PositiveIntegerField()
     created_on = models.DateTimeField(auto_now_add=True)
-    observations = models.TextField()
+    observations = models.TextField(blank=True)
     paid_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -170,6 +170,10 @@ class Reservation(models.Model):
     )
     user = models.ForeignKey('users.wineuser', on_delete=models.PROTECT)
     event_occurrence = models.ForeignKey(EventOccurrence, on_delete=models.PROTECT)
+    status = models.IntegerField(
+        choices=RESERVATION_STATUS,
+        default=RESERVATION_CONFIRMED,
+    )
 
     def __str__(self):
         return '{}: {}, {}'.format(str(self.id), self.user.name, str(self.paid_amount))
