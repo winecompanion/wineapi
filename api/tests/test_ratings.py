@@ -3,18 +3,23 @@ from django.urls import reverse
 
 from rest_framework import status
 
-from api.models import Event, EventOccurrence, Rate, Winery
+from users import GENDER_OTHER, LANGUAGE_ENGLISH
+from api.models import Country, Event, EventOccurrence, Rate, Winery
 from api.serializers import RateSerializer
 from users.models import WineUser
 
 
 class TestRatings(TestCase):
     def setUp(self):
+        self.country = Country.objects.create(name='Argentina')
         self.user = WineUser.objects.create_user(
             email='user@test.com',
             password='abcd',
             first_name='Test',
             last_name='User',
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            country=self.country
         )
         self.winery = Winery.objects.create(
             name='Winery',

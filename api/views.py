@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 
 from . import VARIETALS
 from .models import (
+    Country,
     Event,
     EventCategory,
     EventOccurrence,
@@ -27,6 +28,7 @@ from .models import (
     ImagesEvent,
 )
 from .serializers import (
+    CountrySerializer,
     EventCategorySerializer,
     EventOccurrenceSerializer,
     EventSerializer,
@@ -168,6 +170,23 @@ class TagView(viewsets.ModelViewSet):
         tag = serializer.create(serializer.validated_data)
         return Response(
             {'url': reverse('tags-detail', args=[tag.id])},
+            status=status.HTTP_201_CREATED)
+
+
+class CountryView(viewsets.ModelViewSet):
+    queryset = Country.objects.all()
+    serializer_class = CountrySerializer
+    model_class = Country
+
+    # TODO: permission_classes
+
+    def create(self, request):
+        serializer = CountrySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        country = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('countries-detail', args=[country.id])},
             status=status.HTTP_201_CREATED)
 
 

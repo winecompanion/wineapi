@@ -3,19 +3,24 @@ from django.urls import reverse
 
 from rest_framework import status
 
-from api.models import Reservation, Event, EventOccurrence, Winery
+from api.models import Country, Event, EventOccurrence, Reservation, Winery
 from api.serializers import ReservationSerializer
 
+from users import GENDER_OTHER, LANGUAGE_ENGLISH
 from users.models import WineUser
 
 
 class TestReservation(TestCase):
     def setUp(self):
+        self.country = Country.objects.create(name='Argentina')
         self.user = WineUser.objects.create_user(
             email='user@user.com',
             password='12345678',
             first_name='User',
             last_name='Test',
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            country=self.country
         )
         self.winery = Winery.objects.create(
                 name='My Winery',
