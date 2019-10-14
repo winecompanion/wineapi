@@ -12,7 +12,7 @@ from rest_framework.reverse import reverse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from . import RESERVATION_STATUS, VARIETALS
+from . import RESERVATION_CANCELLED, VARIETALS
 from .models import (
     Country,
     Event,
@@ -235,10 +235,12 @@ class ReservationView(viewsets.ModelViewSet):
             {'url': reverse('reservations-detail', args=[reservation.id])},
             status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['get'], name='get-reservation-status')
-    def get_available_status(self, request):
-        available_status = [{'id': k, 'value': v} for k, v in RESERVATION_STATUS]
-        return Response(available_status, status=status.HTTP_200_OK)
+    @action(detail=True, methods=['post'], name='cancel-reservation')
+    def cancel_reservation(self, request, pk):
+        reservation = get_object_or_404(Reservation, id=pk)
+        reservation.status = RESERVATION_CANCELLED
+        reservation.save()
+        return Response({'detail': 'The reservation has been cancelled'}, status=status.HTTP_200_OK)
 
 
 class VarietalsView(APIView):

@@ -3,6 +3,7 @@ from django.urls import reverse
 
 from rest_framework import status
 
+from api import RESERVATION_CONFIRMED, RESERVATION_CANCELLED
 from api.models import Country, Event, EventOccurrence, Reservation, Winery
 from api.serializers import ReservationSerializer
 
@@ -184,17 +185,14 @@ class TestReservation(TestCase):
         )
         self.assertEqual(response.data, [])
 
-    def test_get_reservation_available_status(self):
-        expected = [
-            {'id': 1, 'value': 'Created'},
-            {'id': 2, 'value': 'Confirmed'},
-            {'id': 3, 'value': 'Rejected'},
-            {'id': 4, 'value': 'Cancelled'},
-            {'id': 5, 'value': 'Paid Out'}
-        ]
+    def test_get_reservation_status(self):
 
-        response = self.client.get(
-            reverse('reservations-get-available-status')
+        reservation = Reservation.objects.create(**self.valid_creation_data)
+        self.assertEqual(reservation.status, RESERVATION_CONFIRMED)
+
+        response = self.client.post(
+            reverse('reservations-cancel-reservation', kwargs={'pk': reservation.id})
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, expected)
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.status, RESERVATION_CANCELLED)
