@@ -649,7 +649,7 @@ class TestEvents(TestCase):
         event2.categories.add(self.category1)
         event2.categories.add(self.category2)
         res = self.client.get(
-            reverse('restaurants'),
+            reverse('restaurant-list'),
         )
         serializer1 = EventSerializer(event1)
         serializer2 = EventSerializer(event2)
@@ -686,4 +686,41 @@ class TestEvents(TestCase):
         self.assertEqual(
             res.data.get('url'),
             reverse('event-occurrences-detail', kwargs={'event_pk': event.id, 'pk': 1})
+        )
+
+    def test_restaurant_get_occurrences(self):
+        restaurant = Event.objects.create(name='Test restaurant', description='Desc 1', winery=self.winery, price=0.0)
+        restaurant.categories.add(self.category_restaurant)
+        restaurant.save()
+
+        occurrence = EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=restaurant
+        )
+        res = self.client.get(
+            reverse('restaurant-occurrences-list', kwargs={'restaurant_pk': restaurant.id}),
+        )
+        serializer = EventOccurrenceSerializer(occurrence)
+        self.assertIn(serializer.data, res.data)
+
+    def test_restaurant_occurrences_post(self):
+        restaurant = Event.objects.create(name='Test Restaurant', description='Desc 1', winery=self.winery, price=0.0)
+        restaurant.categories.add(self.category_restaurant)
+        restaurant.save()
+
+        res = self.client.post(
+            reverse('restaurant-occurrences-list', kwargs={'restaurant_pk': restaurant.id}),
+            {
+                'start': '2030-05-31T20:00:00',
+                'end': '2030-05-31T23:00:00',
+                'vacancies': 50,
+                'event': restaurant,
+            }
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            res.data.get('url'),
+            reverse('restaurant-occurrences-detail', kwargs={'restaurant_pk': restaurant.id, 'pk': 1})
         )
