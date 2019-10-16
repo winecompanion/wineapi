@@ -4,9 +4,10 @@ from django.core.exceptions import ValidationError
 
 from rest_framework import status
 
+from users import GENDER_OTHER, LANGUAGE_ENGLISH
 from users.models import WineUser
 from api import VARIETALS
-from api.models import Winery, WineLine, Wine
+from api.models import Country, Winery, WineLine, Wine
 from api.serializers import WinerySerializer, WineLineSerializer, WineSerializer
 
 
@@ -62,6 +63,7 @@ class TestWinery(TestCase):
 
 class TestWines(TestCase):
     def setUp(self):
+        self.country = Country.objects.create(name='Argentina')
         self.winery = Winery.objects.create(
                 name='Bodega1',
                 description='Test Bodega',
@@ -70,6 +72,9 @@ class TestWines(TestCase):
         self.user = WineUser.objects.create(
             email='testuser@winecompanion.com',
             winery=self.winery,
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            country=self.country,
         )
         self.wine_line = WineLine.objects.create(
             name='Example Wine Line',
@@ -161,6 +166,7 @@ class TestWines(TestCase):
 
 class TestWineLines(TestCase):
     def setUp(self):
+        self.country = Country.objects.create(name='Argentina')
         self.winery = Winery.objects.create(
                 name='Bodega1',
                 description='Test Bodega',
@@ -169,6 +175,9 @@ class TestWineLines(TestCase):
         self.user = WineUser.objects.create(
             email='testuser@winecompanion.com',
             winery=self.winery,
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            country=self.country,
         )
         self.wine_line_creation_data = {
                 'name': 'Wine Line',

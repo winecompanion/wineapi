@@ -6,8 +6,9 @@ from rest_framework import status
 
 from parameterized import parameterized
 
+from users import GENDER_OTHER, LANGUAGE_ENGLISH
 from users.models import WineUser
-from api.models import Event, EventCategory, EventOccurrence, Tag, Winery
+from api.models import Country, Event, EventCategory, EventOccurrence, Tag, Winery
 from api.serializers import EventSerializer, EventOccurrenceSerializer
 
 
@@ -16,6 +17,7 @@ MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY = list(range(7))
 
 class TestEvents(TestCase):
     def setUp(self):
+        self.country = Country.objects.create(name='Argentina')
         self.winery = Winery.objects.create(
                 name='Bodega1',
                 description='Hola',
@@ -24,6 +26,10 @@ class TestEvents(TestCase):
         self.winery_user = WineUser.objects.create(
             email='testuser@winecompanion.com',
             winery=self.winery,
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            phone='2616489178',
+            country=self.country,
         )
         self.category1 = EventCategory.objects.create(name="Tour")
         self.category2 = EventCategory.objects.create(name="Food")
