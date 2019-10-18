@@ -52,13 +52,12 @@ class TestReservation(TestCase):
                 'attendee_number': 2,
                 'observations': 'No kids',
                 'paid_amount': 1000.0,
-                'user': self.user.id,
                 'event_occurrence': self.event_occ.id,
         }
         self.invalid_reservation_data = {
                 'observations': 'observations',
         }
-        self.required_fields = set(['attendee_number', 'paid_amount', 'user', 'event_occurrence'])
+        self.required_fields = set(['attendee_number', 'paid_amount', 'event_occurrence'])
         self.client = Client()
 
     def test_reservation_creation(self):
@@ -74,7 +73,7 @@ class TestReservation(TestCase):
     def test_reservation_serializer(self):
         serializer = ReservationSerializer(data=self.valid_reservation_json_data)
         self.assertTrue(serializer.is_valid())
-        reservation_fields = ['attendee_number', 'observations', 'paid_amount', 'user', 'event_occurrence']
+        reservation_fields = ['attendee_number', 'observations', 'paid_amount', 'event_occurrence']
         self.assertEqual(set(serializer.validated_data.keys()), set(reservation_fields))
 
     def test_invalid_reservation_serializer(self):
@@ -131,12 +130,23 @@ class TestReservation(TestCase):
         self.assertEqual(set(serializer.errors['non_field_errors']), set(['The event is cancelled']))
 
     def test_reservation_endpoint_get(self):
+        self.country = Country.objects.create(name='Argentina')
+        admin_user = WineUser.objects.create_user(
+            email='user@admin.com',
+            password='12345678',
+            is_staff=True,
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            country=self.country,
+        )
+        self.client.force_login(admin_user)
         response = self.client.get(
             reverse('reservations-list')
         )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_reservation_endpoint_create(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('reservations-list'),
             self.valid_reservation_json_data
@@ -144,6 +154,7 @@ class TestReservation(TestCase):
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_reservation_creation_vacancies_decrement(self):
+        self.client.force_login(self.user)
         previous_vacancies = self.event_occ.vacancies
         self.client.post(
             reverse('reservations-list'),
@@ -154,6 +165,7 @@ class TestReservation(TestCase):
         self.assertEqual(new_vacancies, previous_vacancies - self.valid_reservation_json_data['attendee_number'])
 
     def test_reservation_endpoint_create_with_invalid_data(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('reservations-list'),
             self.invalid_reservation_data
@@ -162,6 +174,7 @@ class TestReservation(TestCase):
         self.assertEqual(response.data['errors'].keys(), self.required_fields)
 
     def test_reservation_detail_get(self):
+        self.client.force_login(self.user)
         reservation = Reservation.objects.create(**self.valid_creation_data)
         response = self.client.get(
             reverse('reservations-detail', kwargs={'pk': reservation.id})
@@ -183,13 +196,12 @@ class TestReservation(TestCase):
         response = self.client.get(
             reverse('users-reservations')
         )
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_get_reservation_status(self):
-
+        self.client.force_login(self.user)
         reservation = Reservation.objects.create(**self.valid_creation_data)
         self.assertEqual(reservation.status, RESERVATION_CONFIRMED)
-
         response = self.client.post(
             reverse('reservations-cancel-reservation', kwargs={'pk': reservation.id})
         )

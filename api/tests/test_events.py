@@ -6,7 +6,9 @@ from rest_framework import status
 
 from parameterized import parameterized
 
-from api.models import Event, EventCategory, EventOccurrence, Tag, Winery
+from users import GENDER_OTHER, LANGUAGE_ENGLISH
+from users.models import WineUser
+from api.models import Country, Event, EventCategory, EventOccurrence, Tag, Winery
 from api.serializers import EventSerializer, EventOccurrenceSerializer
 
 
@@ -15,10 +17,19 @@ MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY = list(range(7))
 
 class TestEvents(TestCase):
     def setUp(self):
+        self.country = Country.objects.create(name='Argentina')
         self.winery = Winery.objects.create(
                 name='Bodega1',
                 description='Hola',
                 website='hola.com',
+        )
+        self.winery_user = WineUser.objects.create(
+            email='testuser@winecompanion.com',
+            winery=self.winery,
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            phone='2616489178',
+            country=self.country,
         )
         self.category1 = EventCategory.objects.create(name="Tour")
         self.category2 = EventCategory.objects.create(name="Food")
@@ -29,7 +40,6 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
-                "winery": self.winery.id,
                 "price": 500.0,
                 "categories": [
                     {
@@ -50,7 +60,6 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
-                "winery": self.winery.id,
                 "price": 500.0,
                 "categories": [
                     {
@@ -71,7 +80,6 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
-                "winery": self.winery.id,
                 "price": 0.0,
                 "categories": [
                     {
@@ -108,13 +116,13 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
-                "winery": self.winery.id,
                 "schedule": [],
             },
         }
 
-        self.event_required_fields = ['name', 'description', 'winery', 'price', 'categories', 'schedule', 'vacancies']
+        self.event_required_fields = ['name', 'description', 'price', 'categories', 'schedule', 'vacancies']
         self.client = Client()
+        self.client.force_login(self.winery_user)
 
     def test_dates_between_threshold(self):
         start = date(2019, 8, 18)
@@ -508,6 +516,7 @@ class TestEvents(TestCase):
         res = self.client.get(
             reverse("event-detail", kwargs={'pk': event.id})
         )
+
         self.assertTrue(
             all(
                 [datetime.strptime(occurrence['start'], "%Y-%m-%dT%H:%M:%S") > datetime.now()

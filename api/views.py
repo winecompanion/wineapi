@@ -1,11 +1,10 @@
 from datetime import datetime
 
 from django_filters.rest_framework import DjangoFilterBackend
-from django_filters import DateTimeFromToRangeFilter, FilterSet, ModelMultipleChoiceFilter
 from django.shortcuts import get_object_or_404
 from rest_framework import filters
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, permission_classes
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -13,6 +12,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from . import RESERVATION_CANCELLED, VARIETALS
+from users.permissions import (
+    AdminOrReadOnly,
+    AllowCreateButUpdateOwnerOnly,
+    AllowWineryOwnerOrReadOnly,
+    IsOwnerOrReadOnly,
+    ListAdminOnly,
+    LoginRequiredToEdit,
+)
 from .models import (
     Country,
     Event,
@@ -40,26 +47,7 @@ from .serializers import (
     WineSerializer,
     FileSerializer,
 )
-
-
-class EventFilter(FilterSet):
-    # https://django-filter.readthedocs.io/en/latest/guide/usage.html#declaring-filters
-
-    start = DateTimeFromToRangeFilter(field_name='occurrences__start')
-    category = ModelMultipleChoiceFilter(
-        field_name='categories__name',
-        to_field_name='name',
-        queryset=EventCategory.objects.all()
-    )
-    tag = ModelMultipleChoiceFilter(
-        field_name='tags__name',
-        to_field_name='name',
-        queryset=Tag.objects.all()
-    )
-
-    class Meta:
-        model = Event
-        fields = ['occurrences__start', 'category', 'tag']
+from .filters import EventFilter
 
 
 class EventsView(viewsets.ModelViewSet):
@@ -76,8 +64,10 @@ class EventsView(viewsets.ModelViewSet):
     # filter elements (must use field= as query params )
     filterset_class = EventFilter
 
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
     def create(self, request):
-        serializer = EventSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         event = serializer.create(serializer.validated_data)
@@ -91,6 +81,8 @@ class WineryView(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     search_fields = ['name', 'description']
     http_method_names = ['get', 'head', 'put', 'patch']
+
+    permission_classes = [AllowWineryOwnerOrReadOnly]
 
     @action(detail=True, methods=['get'], name='get-winery-events')
     def events(self, request, pk=None):
@@ -114,8 +106,10 @@ class WineryView(viewsets.ModelViewSet):
 class WineView(viewsets.ModelViewSet):
     serializer_class = WineSerializer
 
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
     def create(self, request, winery_pk, wineline_pk):
-        serializer = WineSerializer(data=request.data)
+        serializer = serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         wine = serializer.create(serializer.validated_data, winery_pk, wineline_pk)
@@ -139,8 +133,10 @@ class WineView(viewsets.ModelViewSet):
 class WineLineView(viewsets.ModelViewSet):
     serializer_class = WineLineSerializer
 
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
     def create(self, request, winery_pk):
-        serializer = WineLineSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         wine_line = serializer.create(serializer.validated_data, winery_pk)
@@ -173,8 +169,10 @@ class TagView(viewsets.ModelViewSet):
     serializer_class = TagSerializer
     model_class = Tag
 
+    permission_classes = [AdminOrReadOnly]
+
     def create(self, request):
-        serializer = TagSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         tag = serializer.create(serializer.validated_data)
@@ -205,8 +203,10 @@ class EventCategoryView(viewsets.ModelViewSet):
     serializer_class = EventCategorySerializer
     model_class = EventCategory
 
+    permission_classes = [AdminOrReadOnly]
+
     def create(self, request):
-        serializer = EventCategorySerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         event_category = serializer.create(serializer.validated_data)
@@ -220,12 +220,14 @@ class ReservationView(viewsets.ModelViewSet):
     serializer_class = ReservationSerializer
     model_class = Reservation
 
-    # Todo: use logged user
+    permission_classes = [IsAuthenticated & ListAdminOnly & AllowCreateButUpdateOwnerOnly]
+
     def create(self, request):
-        serializer = ReservationSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        reservation = serializer.create(serializer.validated_data)
+
+        reservation = serializer.create(serializer.validated_data, request.user.id)
 
         # get event occurrency and decrement vacancies
         event_occurrence = get_object_or_404(EventOccurrence, pk=request.data['event_occurrence'])
@@ -253,9 +255,10 @@ class RatingView(viewsets.ModelViewSet):
     serializer_class = RateSerializer
     model_class = Rate
 
-    @permission_classes([IsAuthenticated])
+    permission_classes = [LoginRequiredToEdit & IsOwnerOrReadOnly]
+
     def create(self, request, event_pk):
-        serializer = RateSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -275,6 +278,8 @@ class FileUploadView(APIView):
         serializer = FileSerializer(data=request.data)
         model = None
         kwargs = {}
+
+        # permission_classes = help
 
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -302,8 +307,10 @@ class EventOccurrencesView(viewsets.ModelViewSet):
     serializer_class = EventOccurrenceSerializer
     model_class = EventOccurrence
 
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
     def create(self, request, event_pk):
-        serializer = EventOccurrenceSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 

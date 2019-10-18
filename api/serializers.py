@@ -84,6 +84,7 @@ class EventSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     vacancies = serializers.IntegerField(write_only=True)
     images = ImageUrlField(read_only=True, many=True)
+    winery = serializers.SlugRelatedField(read_only=True, slug_field='name')
 
     class Meta:
         model = Event
@@ -111,11 +112,15 @@ class EventSerializer(serializers.ModelSerializer):
 
         Params:
         """
+        request = self.context.get("request")
+        if request.user.is_anonymous or not request.user.winery:
+            raise serializers.ValidationError('You must have a winery to create events.')
+
         schedule = data.pop('schedule')
         vacancies = data.pop('vacancies')
         categories = data.pop('categories')
         tags = data.pop('tags') if 'tags' in data else []
-
+        data['winery'] = request.user.winery
         event = Event.objects.create(**data)
 
         for elem in schedule:
@@ -201,10 +206,6 @@ class EventSerializer(serializers.ModelSerializer):
         user = request.user
         rate = Rate.objects.filter(event=event, user=user).first()
         return RateSerializer(rate).data if rate else None
-
-    def to_representation(self, obj):
-        self.fields['winery'] = serializers.SlugRelatedField(read_only=True, slug_field='name')
-        return super().to_representation(obj)
 
 
 class WineSerializer(serializers.ModelSerializer):
@@ -305,6 +306,7 @@ class ReservationSerializer(serializers.ModelSerializer):
     """Seriazlizer for Reservation"""
     id = serializers.ReadOnlyField()
     created_on = serializers.ReadOnlyField()
+    user = serializers.SlugRelatedField(read_only=True, slug_field='email')
 
     class Meta:
         model = Reservation
@@ -322,6 +324,14 @@ class ReservationSerializer(serializers.ModelSerializer):
         if attendee_number <= 0:
             raise serializers.ValidationError('The attendee_number must be greater than cero')
         return attendee_number
+
+    def create(self, data, user_pk):
+        data['user_id'] = user_pk
+        try:
+            reservation = Reservation.objects.create(**data)
+        except IntegrityError:
+            raise ParseError(detail='Failed to create Reservation')
+        return reservation
 
     def validate(self, data):
         """
