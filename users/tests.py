@@ -4,17 +4,33 @@ from django.core.exceptions import ValidationError
 
 from rest_framework import status
 
-from . import TOURIST, WINERY
+from api.models import Country
+from . import TOURIST, WINERY, GENDER_OTHER, LANGUAGE_ENGLISH
 from .models import WineUser, UserSerializer
 
 
 class TestUser(TestCase):
     def setUp(self):
-        self.valid_user_data = {
+        self.country = Country.objects.create(name='Argentina')
+        self.valid_user_creation_data = {
             'email': 'example@winecompanion.com',
             'password': 'testuserpass',
             'first_name': 'First Name',
             'last_name': 'Last Name',
+            'gender': GENDER_OTHER,
+            'language': LANGUAGE_ENGLISH,
+            'phone': '2616489178',
+            'country': self.country
+        }
+        self.valid_user_post_data = {
+            'email': 'example@winecompanion.com',
+            'password': 'testuserpass',
+            'first_name': 'First Name',
+            'last_name': 'Last Name',
+            'gender': GENDER_OTHER,
+            'language': LANGUAGE_ENGLISH,
+            'phone': '2616489178',
+            'country': self.country.id
         }
         self.valid_winery_data = {
             'name': 'Test winery name',
@@ -25,12 +41,30 @@ class TestUser(TestCase):
         self.invalid_user_data = {
             'email': '',
         }
-        self.users_required_fields = set(['email', 'password', 'first_name', 'last_name'])
-        self.serializer_fields = set(['email', 'first_name', 'last_name', 'birth_date'])
+        self.users_required_fields = set([
+            'email',
+            'password',
+            'first_name',
+            'last_name',
+            'gender',
+            'language',
+            'country',
+            'phone',
+            ])
+        self.serializer_fields = set([
+            'email',
+            'first_name',
+            'last_name',
+            'birth_date',
+            'gender',
+            'language',
+            'country',
+            'phone',
+            ])
 
     def test_user_creation(self):
         """Test valid attributes"""
-        user = WineUser(**self.valid_user_data)
+        user = WineUser(**self.valid_user_creation_data)
         user.full_clean()
         user.save()
 
@@ -46,10 +80,10 @@ class TestUser(TestCase):
 
     def test_user_serializer(self):
         """Test serializer fields"""
-        serializer = UserSerializer(data=self.valid_user_data)
+        serializer = UserSerializer(data=self.valid_user_post_data)
         serializer.is_valid()
         # In this case, we don't want the serializer to return the password since it's read only.
-        self.assertEqual(set(serializer.data.keys()), self.serializer_fields)
+        self.assertEqual(set(serializer.validated_data.keys()), self.users_required_fields)
 
     def test_invalid_user_serializer(self):
         """Test required fields"""
@@ -59,6 +93,16 @@ class TestUser(TestCase):
         self.assertEqual(set(serializer.errors), self.users_required_fields)
 
     def test_users_endpoint_get(self):
+        self.country = Country.objects.create(name='Argentina')
+        user = WineUser.objects.create_user(
+            email='testuser@winecompanion.com',
+            password='1234',
+            is_staff=True,
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            country=self.country,
+        )
+        self.client.force_login(user)
         response = self.client.get(
             reverse('users-list'),
         )
@@ -67,7 +111,7 @@ class TestUser(TestCase):
     def test_users_endpoint_create(self):
         response = self.client.post(
             reverse('users-list'),
-            self.valid_user_data
+            self.valid_user_post_data
         )
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
@@ -80,7 +124,9 @@ class TestUser(TestCase):
         self.assertEqual(response.data['errors'].keys(), self.users_required_fields)
 
     def test_users_detail_get(self):
-        user = WineUser.objects.create(**self.valid_user_data)
+        user = WineUser.objects.create(**self.valid_user_creation_data)
+        self.client.force_login(user)
+
         response = self.client.get(
             reverse('users-detail', kwargs={'pk': user.id})
         )
@@ -90,22 +136,22 @@ class TestUser(TestCase):
         self.assertEqual(user.user_type, TOURIST)
 
     def test_create_user_with_winery_endpoint(self):
-        data = self.valid_user_data
+        data = self.valid_user_post_data
         data['winery'] = self.valid_winery_data
         response = self.client.post(
             reverse('users-list'),
             data=data,
             content_type='application/json'
         )
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         db_user = WineUser.objects.first()
         self.assertEqual(db_user.winery.name, data['winery']['name'])
         self.assertEqual(db_user.user_type, WINERY)
 
     def test_user_login(self):
-        user = WineUser.objects.create_user(**self.valid_user_data)
+        user = WineUser.objects.create_user(**self.valid_user_creation_data)
         res = self.client.post(
             reverse('token_obtain_pair'),
-            {'email': user.email, 'password': self.valid_user_data['password']},
+            {'email': user.email, 'password': self.valid_user_post_data['password']},
         )
         self.assertEqual(set(['access', 'refresh']), set(res.data.keys()))

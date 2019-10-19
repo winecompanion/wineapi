@@ -2,15 +2,24 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
+from . import LANGUAGES, GENDERS
 from .models import WineUser, UserSerializer
 from api.models import Reservation
 from api.serializers import ReservationSerializer
+
+from .permissions import (
+    AllowCreateUserButUpdateOwnerOnly,
+    ListAdminOnly,
+)
 
 
 class WineUserView(viewsets.ModelViewSet):
     queryset = WineUser.objects.all()
     serializer_class = UserSerializer
+
+    permission_classes = [ListAdminOnly, AllowCreateUserButUpdateOwnerOnly]
 
     def create(self, request):
         serializer = UserSerializer(data=request.data)
@@ -26,3 +35,15 @@ class WineUserView(viewsets.ModelViewSet):
         res = Reservation.objects.filter(user=request.user.id).order_by('-id')
         reservations = ReservationSerializer(res, many=True)
         return Response(reservations.data, status=status.HTTP_200_OK)
+
+
+class LanguagesView(APIView):
+    def get(self, request):
+        languages = [{'id': k, 'value': v} for k, v in LANGUAGES]
+        return Response(languages)
+
+
+class GendersView(APIView):
+    def get(self, request):
+        genders = [{'id': k, 'value': v} for k, v in GENDERS]
+        return Response(genders)

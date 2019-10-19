@@ -4,18 +4,21 @@ from django.urls import reverse
 from rest_framework import status
 
 from api.models import (
+    Country,
     Event,
     EventCategory,
     EventOccurrence,
     Reservation,
     Winery,
 )
+from users import GENDER_OTHER, LANGUAGE_ENGLISH
 from users.models import WineUser
 
 
 class TestReports(TestCase):
     def setUp(self):
         self.client = Client()
+        self.country = Country.objects.create(name='Argentina')
 
         self.winery = Winery.objects.create(
             name='My Winery',
@@ -23,10 +26,14 @@ class TestReports(TestCase):
             website='website.com',
         )
         self.user = WineUser.objects.create_user(
-            email='user@user.com',
-            password='1234',
-            first_name='User',
-            last_name='Test',
+            email='example@winecompanion.com',
+            password='testuserpass',
+            first_name='First Name',
+            last_name='Last Name',
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            phone='2616489178',
+            country=self.country,
             winery=self.winery,
         )
         self.event_category = EventCategory.objects.create(name="Test category")

@@ -9,6 +9,7 @@ from rest_framework.exceptions import ParseError
 from rest_framework import serializers
 
 from .models import (
+    Country,
     Event,
     EventOccurrence,
     Winery,
@@ -49,6 +50,15 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 
+class CountrySerializer(serializers.ModelSerializer):
+    """Serializer for Countries"""
+    id = serializers.ReadOnlyField
+
+    class Meta:
+        model = Country
+        fields = ['id', 'name']
+
+
 class VenueSerializer(serializers.ModelSerializer):
     """Serializer for event occurrences """
     id = serializers.ReadOnlyField()
@@ -74,6 +84,7 @@ class EventSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     vacancies = serializers.IntegerField(write_only=True)
     images = ImageUrlField(read_only=True, many=True)
+    winery = serializers.SlugRelatedField(read_only=True, slug_field='name')
 
     class Meta:
         model = Event
@@ -101,11 +112,15 @@ class EventSerializer(serializers.ModelSerializer):
 
         Params:
         """
+        request = self.context.get("request")
+        if request.user.is_anonymous or not request.user.winery:
+            raise serializers.ValidationError('You must have a winery to create events.')
+
         schedule = data.pop('schedule')
         vacancies = data.pop('vacancies')
         categories = data.pop('categories')
         tags = data.pop('tags') if 'tags' in data else []
-
+        data['winery'] = request.user.winery
         event = Event.objects.create(**data)
 
         for elem in schedule:
@@ -170,6 +185,11 @@ class EventSerializer(serializers.ModelSerializer):
 
         return tags
 
+    def validate_vacancies(self, vacancies):
+        if vacancies <= 0:
+            raise serializers.ValidationError('The vacancies must be greater than cero.')
+        return vacancies
+
     def get_occurrences(self, event):
         occurrences = EventOccurrence.objects.filter(event=event, start__gt=datetime.now())
         serializer = VenueSerializer(instance=occurrences, many=True)
@@ -181,16 +201,11 @@ class EventSerializer(serializers.ModelSerializer):
 
     def get_current_user_rating(self, event):
         request = self.context.get("request")
-        if request and not request.user.is_anonymous:
-            user = request.user
-            rate = Rate.objects.filter(event=event, user=user).first()
-            return getattr(rate, 'rate', None)
-
-        return None
-
-    def to_representation(self, obj):
-        self.fields['winery'] = serializers.SlugRelatedField(read_only=True, slug_field='name')
-        return super().to_representation(obj)
+        if not request or request.user.is_anonymous:
+            return None
+        user = request.user
+        rate = Rate.objects.filter(event=event, user=user).first()
+        return RateSerializer(rate).data if rate else None
 
 
 class WineSerializer(serializers.ModelSerializer):
@@ -209,6 +224,10 @@ class WineSerializer(serializers.ModelSerializer):
         except IntegrityError:
             raise ParseError(datail='Invalid winery or wine line.')
         return wine
+
+    def to_representation(self, obj):
+        self.fields['varietal'] = serializers.CharField(source='get_varietal_display')
+        return super().to_representation(obj)
 
 
 class WineLineSerializer(serializers.ModelSerializer):
@@ -287,6 +306,7 @@ class ReservationSerializer(serializers.ModelSerializer):
     """Seriazlizer for Reservation"""
     id = serializers.ReadOnlyField()
     created_on = serializers.ReadOnlyField()
+    user = serializers.SlugRelatedField(read_only=True, slug_field='email')
 
     class Meta:
         model = Reservation
@@ -299,6 +319,19 @@ class ReservationSerializer(serializers.ModelSerializer):
             'user',
             'event_occurrence',
         )
+
+    def validate_attendee_number(self, attendee_number):
+        if attendee_number <= 0:
+            raise serializers.ValidationError('The attendee_number must be greater than cero')
+        return attendee_number
+
+    def create(self, data, user_pk):
+        data['user_id'] = user_pk
+        try:
+            reservation = Reservation.objects.create(**data)
+        except IntegrityError:
+            raise ParseError(detail='Failed to create Reservation')
+        return reservation
 
     def validate(self, data):
         """
@@ -318,15 +351,18 @@ class ReservationSerializer(serializers.ModelSerializer):
     # Override serialization of event_occurrence only when readed
     def to_representation(self, obj):
         self.fields['event_occurrence'] = EventOccurrenceSerializer()
+        self.fields['status'] = serializers.CharField(source='get_status_display')
         return super().to_representation(obj)
 
 
 class RateSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField()
     user_name = serializers.ReadOnlyField()
+    date = serializers.DateTimeField(source='modified', read_only=True)
 
     class Meta:
         model = Rate
-        fields = ('user_name', 'rate', 'comment')
+        fields = ('id', 'user_id', 'user_name', 'date', 'rate', 'comment')
 
     def create(self, data, event_pk, user_pk):
         data['event_id'] = event_pk
@@ -334,5 +370,5 @@ class RateSerializer(serializers.ModelSerializer):
         try:
             rate = Rate.objects.create(**data)
         except IntegrityError:
-            raise ParseError(detail='Invalid event.')
+            raise ParseError(detail='invalid event.')
         return rate

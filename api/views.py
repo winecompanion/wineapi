@@ -2,24 +2,33 @@ from datetime import datetime
 
 from django.db.models import Count, F
 from django.db.models.functions import ExtractMonth
-from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import (
     DateTimeFromToRangeFilter,
     FilterSet,
     ModelMultipleChoiceFilter,
 )
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from rest_framework import filters
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, permission_classes
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from . import VARIETALS
+from . import RESERVATION_CANCELLED, VARIETALS
+from users.permissions import (
+    AdminOrReadOnly,
+    AllowCreateButUpdateOwnerOnly,
+    AllowWineryOwnerOrReadOnly,
+    IsOwnerOrReadOnly,
+    ListAdminOnly,
+    LoginRequiredToEdit,
+)
 from .models import (
+    Country,
     Event,
     EventCategory,
     EventOccurrence,
@@ -33,6 +42,7 @@ from .models import (
     ImagesEvent,
 )
 from .serializers import (
+    CountrySerializer,
     EventCategorySerializer,
     EventOccurrenceSerializer,
     EventSerializer,
@@ -80,8 +90,10 @@ class EventsView(viewsets.ModelViewSet):
     # filter elements (must use field= as query params )
     filterset_class = EventFilter
 
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
     def create(self, request):
-        serializer = EventSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -101,20 +113,34 @@ class WineryView(viewsets.ModelViewSet):
     search_fields = ["name", "description"]
     http_method_names = ["get", "head", "put", "patch"]
 
-    @action(detail=True, methods=["get"], name="get-winery-events")
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
+    @action(detail=True, methods=['get'], name='get-winery-events')
     def events(self, request, pk=None):
         query = Event.objects.filter(
-            occurrences__start__gt=datetime.now(), winery=pk
-        ).distinct()
+            occurrences__start__gt=datetime.now(), winery=pk,
+        ).exclude(categories__name__icontains='restaurant').distinct()
         events = EventSerializer(query, many=True)
         return Response(events.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], name='get-winery-restaurants')
+    def restaurants(self, request, pk=None):
+        query = Event.objects.filter(
+            occurrences__start__gt=datetime.now(),
+            categories__name__icontains='restaurant',
+            winery=pk,
+        ).distinct()
+        restaurants = EventSerializer(query, many=True)
+        return Response(restaurants.data, status=status.HTTP_200_OK)
 
 
 class WineView(viewsets.ModelViewSet):
     serializer_class = WineSerializer
 
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
     def create(self, request, winery_pk, wineline_pk):
-        serializer = WineSerializer(data=request.data)
+        serializer = serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -145,8 +171,10 @@ class WineView(viewsets.ModelViewSet):
 class WineLineView(viewsets.ModelViewSet):
     serializer_class = WineLineSerializer
 
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
     def create(self, request, winery_pk):
-        serializer = WineLineSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -189,8 +217,10 @@ class TagView(viewsets.ModelViewSet):
     serializer_class = TagSerializer
     model_class = Tag
 
+    permission_classes = [AdminOrReadOnly]
+
     def create(self, request):
-        serializer = TagSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -202,13 +232,32 @@ class TagView(viewsets.ModelViewSet):
         )
 
 
+class CountryView(viewsets.ModelViewSet):
+    queryset = Country.objects.all()
+    serializer_class = CountrySerializer
+    model_class = Country
+
+    # TODO: permission_classes
+
+    def create(self, request):
+        serializer = CountrySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        country = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('countries-detail', args=[country.id])},
+            status=status.HTTP_201_CREATED)
+
+
 class EventCategoryView(viewsets.ModelViewSet):
     queryset = EventCategory.objects.all()
     serializer_class = EventCategorySerializer
     model_class = EventCategory
 
+    permission_classes = [AdminOrReadOnly]
+
     def create(self, request):
-        serializer = EventCategorySerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -225,14 +274,14 @@ class ReservationView(viewsets.ModelViewSet):
     serializer_class = ReservationSerializer
     model_class = Reservation
 
-    # Todo: use logged user
+    permission_classes = [IsAuthenticated & ListAdminOnly & AllowCreateButUpdateOwnerOnly]
+
     def create(self, request):
-        serializer = ReservationSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            return Response(
-                {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
-        reservation = serializer.create(serializer.validated_data)
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        reservation = serializer.create(serializer.validated_data, request.user.id)
 
         # get event occurrency and decrement vacancies
         event_occurrence = get_object_or_404(
@@ -245,6 +294,13 @@ class ReservationView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=['post'], name='cancel-reservation')
+    def cancel_reservation(self, request, pk):
+        reservation = get_object_or_404(Reservation, id=pk)
+        reservation.status = RESERVATION_CANCELLED
+        reservation.save()
+        return Response({'detail': 'The reservation has been cancelled'}, status=status.HTTP_200_OK)
+
 
 class VarietalsView(APIView):
     def get(self, request):
@@ -256,9 +312,10 @@ class RatingView(viewsets.ModelViewSet):
     serializer_class = RateSerializer
     model_class = Rate
 
-    @permission_classes([IsAuthenticated])
+    permission_classes = [LoginRequiredToEdit & IsOwnerOrReadOnly]
+
     def create(self, request, event_pk):
-        serializer = RateSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -286,6 +343,8 @@ class FileUploadView(APIView):
         model = None
         kwargs = {}
 
+        # permission_classes = help
+
         if not serializer.is_valid():
             return Response(
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -310,22 +369,20 @@ class FileUploadView(APIView):
         return Response(status=status.HTTP_201_CREATED)
 
 
-class RestaurantsView(APIView):
-    def get(self, request):
-        query = Event.objects.filter(
-            occurrences__start__gt=datetime.now(),
-            categories__name__icontains="restaurant",
-        ).distinct()
-        restaurants = EventSerializer(query, many=True)
-        return Response(restaurants.data, status=status.HTTP_200_OK)
+class RestaurantsView(EventsView):
+    queryset = Event.objects.filter(
+        occurrences__start__gt=datetime.now(), categories__name__icontains='restaurant'
+    ).distinct()
 
 
 class EventOccurrencesView(viewsets.ModelViewSet):
     serializer_class = EventOccurrenceSerializer
     model_class = EventOccurrence
 
+    permission_classes = [AllowWineryOwnerOrReadOnly]
+
     def create(self, request, event_pk):
-        serializer = EventOccurrenceSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -347,6 +404,30 @@ class EventOccurrencesView(viewsets.ModelViewSet):
         return EventOccurrence.objects.filter(event=event.id)
 
 
+class RestaurantOccurrencesView(viewsets.ModelViewSet):
+    serializer_class = EventOccurrenceSerializer
+    model_class = EventOccurrence
+
+    def create(self, request, restaurant_pk):
+        serializer = EventOccurrenceSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        occurrence = serializer.create(serializer.validated_data, restaurant_pk)
+        return Response(
+            {
+                'url': reverse(
+                    'restaurant-occurrences-detail',
+                    kwargs={'restaurant_pk': restaurant_pk, 'pk': occurrence.id}
+                )
+            },
+            status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        event = get_object_or_404(Event, id=self.kwargs['restaurant_pk'])
+        return EventOccurrence.objects.filter(event=event.id)
+
+
 class ReportsView(APIView):
     def get(self, request, *args, **kwargs):
         user_events = request.user.winery.events.all()
@@ -358,13 +439,13 @@ class ReportsView(APIView):
                 .values("name", "count")
                 .order_by("count")[:10]
             ),
-            "reservations_by_month": Reservation.objects.annotate(
-                month=ExtractMonth("event_occurrence__start")
-            )
-            .values("month")
-            .annotate(count=Count("id"))
-            .values("month", "count")
-            .order_by("month"),
+            "reservations_by_month": (
+                Reservation.objects.annotate(month=ExtractMonth("event_occurrence__start"))
+                .values("month")
+                .annotate(count=Count("id"))
+                .values("month", "count")
+                .order_by("month")
+            ),
         }
 
         # Awful hack to return months with count = 0

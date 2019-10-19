@@ -6,7 +6,9 @@ from rest_framework import status
 
 from parameterized import parameterized
 
-from api.models import Event, EventCategory, EventOccurrence, Tag, Winery
+from users import GENDER_OTHER, LANGUAGE_ENGLISH
+from users.models import WineUser
+from api.models import Country, Event, EventCategory, EventOccurrence, Tag, Winery
 from api.serializers import EventSerializer, EventOccurrenceSerializer
 
 
@@ -15,10 +17,19 @@ MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY = list(range(7))
 
 class TestEvents(TestCase):
     def setUp(self):
+        self.country = Country.objects.create(name='Argentina')
         self.winery = Winery.objects.create(
                 name='Bodega1',
                 description='Hola',
                 website='hola.com',
+        )
+        self.winery_user = WineUser.objects.create(
+            email='testuser@winecompanion.com',
+            winery=self.winery,
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            phone='2616489178',
+            country=self.country,
         )
         self.category1 = EventCategory.objects.create(name="Tour")
         self.category2 = EventCategory.objects.create(name="Food")
@@ -29,7 +40,6 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
-                "winery": self.winery.id,
                 "price": 500.0,
                 "categories": [
                     {
@@ -50,7 +60,6 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
-                "winery": self.winery.id,
                 "price": 500.0,
                 "categories": [
                     {
@@ -71,7 +80,6 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
-                "winery": self.winery.id,
                 "price": 0.0,
                 "categories": [
                     {
@@ -108,13 +116,13 @@ class TestEvents(TestCase):
                 "name": "TEST_EVENT_NAME",
                 "description": "TEST_EVENT_DESCRIPTION",
                 "vacancies": 50,
-                "winery": self.winery.id,
                 "schedule": [],
             },
         }
 
-        self.event_required_fields = ['name', 'description', 'winery', 'price', 'categories', 'schedule', 'vacancies']
+        self.event_required_fields = ['name', 'description', 'price', 'categories', 'schedule', 'vacancies']
         self.client = Client()
+        self.client.force_login(self.winery_user)
 
     def test_dates_between_threshold(self):
         start = date(2019, 8, 18)
@@ -508,6 +516,7 @@ class TestEvents(TestCase):
         res = self.client.get(
             reverse("event-detail", kwargs={'pk': event.id})
         )
+
         self.assertTrue(
             all(
                 [datetime.strptime(occurrence['start'], "%Y-%m-%dT%H:%M:%S") > datetime.now()
@@ -548,6 +557,52 @@ class TestEvents(TestCase):
 
         res = self.client.get(
             reverse('winery-events', kwargs={'pk': self.winery.id}),
+        )
+        serializer_event = EventSerializer(event)
+        serializer_event_from_other_winery = EventSerializer(event_from_other_winery)
+
+        self.assertIn(serializer_event.data, res.data)
+        self.assertNotIn(serializer_event_from_other_winery.data, res.data)
+
+    def test_get_winery_restaurants(self):
+        event = Event.objects.create(
+            name='Event from winery',
+            description='Should be shown',
+            winery=self.winery,
+            price=0.0
+        )
+        event.categories.add(self.category_restaurant)
+        event.save()
+
+        other_winery = Winery.objects.create(
+                name='Other Winery',
+                description='test',
+                website='test.com',
+        )
+        event_from_other_winery = Event.objects.create(
+            name='Other Winery Event',
+            description='Should not be shown',
+            winery=other_winery,
+            price=0.0
+        )
+        event_from_other_winery.categories.add(self.category_restaurant)
+        event_from_other_winery.save()
+
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event
+        )
+        EventOccurrence.objects.create(
+            start='2036-10-31T20:00:00',
+            end='2036-10-31T23:00:00',
+            vacancies=50,
+            event=event_from_other_winery
+        )
+
+        res = self.client.get(
+            reverse('winery-restaurants', kwargs={'pk': self.winery.id}),
         )
         serializer_event = EventSerializer(event)
         serializer_event_from_other_winery = EventSerializer(event_from_other_winery)
@@ -603,7 +658,7 @@ class TestEvents(TestCase):
         event2.categories.add(self.category1)
         event2.categories.add(self.category2)
         res = self.client.get(
-            reverse('restaurants'),
+            reverse('restaurant-list'),
         )
         serializer1 = EventSerializer(event1)
         serializer2 = EventSerializer(event2)
@@ -640,4 +695,41 @@ class TestEvents(TestCase):
         self.assertEqual(
             res.data.get('url'),
             reverse('event-occurrences-detail', kwargs={'event_pk': event.id, 'pk': 1})
+        )
+
+    def test_restaurant_get_occurrences(self):
+        restaurant = Event.objects.create(name='Test restaurant', description='Desc 1', winery=self.winery, price=0.0)
+        restaurant.categories.add(self.category_restaurant)
+        restaurant.save()
+
+        occurrence = EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=restaurant
+        )
+        res = self.client.get(
+            reverse('restaurant-occurrences-list', kwargs={'restaurant_pk': restaurant.id}),
+        )
+        serializer = EventOccurrenceSerializer(occurrence)
+        self.assertIn(serializer.data, res.data)
+
+    def test_restaurant_occurrences_post(self):
+        restaurant = Event.objects.create(name='Test Restaurant', description='Desc 1', winery=self.winery, price=0.0)
+        restaurant.categories.add(self.category_restaurant)
+        restaurant.save()
+
+        res = self.client.post(
+            reverse('restaurant-occurrences-list', kwargs={'restaurant_pk': restaurant.id}),
+            {
+                'start': '2030-05-31T20:00:00',
+                'end': '2030-05-31T23:00:00',
+                'vacancies': 50,
+                'event': restaurant,
+            }
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            res.data.get('url'),
+            reverse('restaurant-occurrences-detail', kwargs={'restaurant_pk': restaurant.id, 'pk': 1})
         )

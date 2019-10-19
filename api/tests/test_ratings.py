@@ -3,18 +3,23 @@ from django.urls import reverse
 
 from rest_framework import status
 
-from api.models import Event, EventOccurrence, Rate, Winery
+from users import GENDER_OTHER, LANGUAGE_ENGLISH
+from api.models import Country, Event, EventOccurrence, Rate, Winery
 from api.serializers import RateSerializer
 from users.models import WineUser
 
 
 class TestRatings(TestCase):
     def setUp(self):
+        self.country = Country.objects.create(name='Argentina')
         self.user = WineUser.objects.create_user(
             email='user@test.com',
             password='abcd',
             first_name='Test',
             last_name='User',
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            country=self.country
         )
         self.winery = Winery.objects.create(
             name='Winery',
@@ -80,6 +85,7 @@ class TestRatings(TestCase):
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
     def test_rate_endpoint_create_with_invalid_data(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('event-ratings-list', kwargs={'event_pk': self.event.id}),
             self.invalid_rate_data
@@ -108,7 +114,7 @@ class TestRatings(TestCase):
         response = self.client.get(
             reverse('event-detail', kwargs={'pk': self.event.id}),
         )
-        self.assertEqual(response.data.get('current_user_rating'), rate.rate)
+        self.assertEqual(response.data.get('current_user_rating'), RateSerializer(rate).data)
 
     def test_get_event_user_calification_not_logged_in(self):
         EventOccurrence.objects.create(
