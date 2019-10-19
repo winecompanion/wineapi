@@ -433,10 +433,12 @@ class ReportsView(APIView):
         user_events = request.user.winery.events.all()
         response = {
             "reservations_by_event": (
-                Reservation.objects.annotate(name=F("event_occurrence__event__name"))
-                .filter(event_occurrence__event__in=user_events)
+                Reservation.objects
+                .values("event_occurrence__event__name")
+                .annotate(name=F("event_occurrence__event__name"))
                 .annotate(count=Count("id"))
                 .values("name", "count")
+                .filter(event_occurrence__event__in=user_events)
                 .order_by("count")[:10]
             ),
             "reservations_by_month": (
@@ -453,10 +455,9 @@ class ReportsView(APIView):
         zero_count_months = [{"month": i, "count": 0} for i in range(1, 13)]
         reservations = response["reservations_by_month"]
 
-        response["reservations_by_month"] = [
-            r if e["month"] == r["month"] else e
-            for e in zero_count_months
-            for r in reservations
-        ]
+        for elem in reservations:
+            zero_count_months[elem['month'] - 1].update(elem)
+
+        response['reservations_by_month'] = zero_count_months
 
         return Response(response)

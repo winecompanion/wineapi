@@ -51,9 +51,15 @@ class TestReports(TestCase):
         )
         self.event_1.categories.add(self.event_category)
         self.event_2.categories.add(self.event_category)
-        self.event_occ = EventOccurrence.objects.create(
+        self.event_occ_october = EventOccurrence.objects.create(
             start='2020-10-31T20:00:00',
             end='2020-10-31T23:00:00',
+            vacancies=50,
+            event=self.event_1
+        )
+        self.event_occ_december = EventOccurrence.objects.create(
+            start='2020-12-11T20:00:00',
+            end='2020-12-11T23:00:00',
             vacancies=50,
             event=self.event_1
         )
@@ -62,7 +68,14 @@ class TestReports(TestCase):
             observations='No kids',
             paid_amount=1000.0,
             user=self.user,
-            event_occurrence=self.event_occ,
+            event_occurrence=self.event_occ_october,
+        )
+        self.reservation = Reservation.objects.create(
+            attendee_number=2,
+            observations='',
+            paid_amount=1400.0,
+            user=self.user,
+            event_occurrence=self.event_occ_december,
         )
 
     def test_reservations_report(self):
@@ -73,7 +86,7 @@ class TestReports(TestCase):
         expected_reservations_by_event = [
             {
                 "name": self.event_1.name,
-                "count": 1,
+                "count": 2,
             }
         ]
         expected_reservations_by_month = [
@@ -123,7 +136,7 @@ class TestReports(TestCase):
             },
             {
                 "month": 12,
-                "count": 0,
+                "count": 1,
             },
         ]
 
