@@ -196,6 +196,7 @@ class ImagesEvent(models.Model):
         on_delete=models.CASCADE
     )
 
+
 class Mail():
     def send_mail(subject, message, mailfrom, mailto):
         send_mail(subject, message, mailfrom, mailto, fail_silently=False)
