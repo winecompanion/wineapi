@@ -51,10 +51,6 @@ from .filters import EventFilter
 
 
 class EventsView(viewsets.ModelViewSet):
-    queryset = Event.objects.filter(
-        occurrences__start__gt=datetime.now(),
-        cancelled__isnull=True,
-    ).exclude(categories__name__icontains='restaurant').distinct()
 
     serializer_class = EventSerializer
 
@@ -77,8 +73,25 @@ class EventsView(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], name='cancel-event')
     def cancel_event(self, request, pk):
         event = get_object_or_404(Event, id=pk)
-        event.cancel()
-        return Response({'detail': 'The event has been cancelled'}, status=status.HTTP_200_OK)
+        if getattr(request.user, 'winery', None) and request.user.winery.id != event.winery.id:
+            return Response({'detail': 'Access Denied'}, status=status.HTTP_403_FORBIDDEN)
+        message = event.cancel()
+        return Response({'detail': message}, status=status.HTTP_200_OK)
+
+    def get_queryset(self):
+        all_events = Event.objects.filter(
+            occurrences__start__gt=datetime.now(),
+            cancelled__isnull=True,
+        ).exclude(categories__name__icontains='restaurant').distinct()
+
+        own_events = None
+        if getattr(self.request.user, 'winery', None):
+            own_events = Event.objects.filter(
+                winery=self.request.user.winery.id,
+            ).exclude(categories__name__icontains='restaurant').distinct()
+
+        queryset = all_events if not own_events else all_events | own_events
+        return queryset
 
 
 class WineryView(viewsets.ModelViewSet):
@@ -93,21 +106,39 @@ class WineryView(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], name='get-winery-events')
     def events(self, request, pk=None):
-        query = Event.objects.filter(
-            occurrences__start__gt=datetime.now(), winery=pk,
+        events = Event.objects.filter(
+            occurrences__start__gt=datetime.now(),
+            winery=pk,
+            cancelled__isnull=True,
         ).exclude(categories__name__icontains='restaurant').distinct()
-        events = EventSerializer(query, many=True)
-        return Response(events.data, status=status.HTTP_200_OK)
+
+        own_events = None
+        if getattr(request.user, 'winery', None) and request.user.winery.id == int(pk):
+            own_events = Event.objects.filter(
+                winery=pk,
+            ).exclude(categories__name__icontains='restaurant').distinct()
+        query = events | own_events if own_events else events
+        event_list = EventSerializer(query, many=True)
+        return Response(event_list.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'], name='get-winery-restaurants')
     def restaurants(self, request, pk=None):
-        query = Event.objects.filter(
+        restaurants = Event.objects.filter(
             occurrences__start__gt=datetime.now(),
             categories__name__icontains='restaurant',
             winery=pk,
+            cancelled__isnull=True,
         ).distinct()
-        restaurants = EventSerializer(query, many=True)
-        return Response(restaurants.data, status=status.HTTP_200_OK)
+
+        own_restaurants = None
+        if getattr(request.user, 'winery', None) and request.user.winery.id == int(pk):
+            own_restaurants = Event.objects.filter(
+                winery=pk,
+                categories__name__icontains='restaurant',
+            ).distinct()
+        query = restaurants | own_restaurants if own_restaurants else restaurants
+        restaurants_list = EventSerializer(query, many=True)
+        return Response(restaurants_list.data, status=status.HTTP_200_OK)
 
 
 class WineView(viewsets.ModelViewSet):
@@ -247,8 +278,10 @@ class ReservationView(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], name='cancel-reservation')
     def cancel_reservation(self, request, pk):
         reservation = get_object_or_404(Reservation, id=pk)
-        reservation.cancel()
-        return Response({'detail': 'The reservation has been cancelled'}, status=status.HTTP_200_OK)
+        if reservation.user.id != request.user.id:
+            return Response({'detail': 'Permission Denied'}, status=status.HTTP_403_FORBIDDEN)
+        message = reservation.cancel()
+        return Response({'detail': message}, status=status.HTTP_200_OK)
 
 
 class VarietalsView(APIView):
@@ -302,11 +335,23 @@ class FileUploadView(APIView):
 
 
 class RestaurantsView(EventsView):
-    queryset = Event.objects.filter(
-        occurrences__start__gt=datetime.now(),
-        categories__name__icontains='restaurant',
-        cancelled__isnull=True,
-    ).distinct()
+
+    def get_queryset(self):
+        all_restaurants = Event.objects.filter(
+            occurrences__start__gt=datetime.now(),
+            categories__name__icontains='restaurant',
+            cancelled__isnull=True,
+        ).distinct()
+
+        own_restaurants = None
+        if getattr(self.request.user, 'winery', None):
+            own_restaurants = Event.objects.filter(
+                winery=self.request.user.winery.id,
+                categories__name__icontains='restaurant',
+            ).distinct()
+
+        queryset = all_restaurants if not own_restaurants else all_restaurants | own_restaurants
+        return queryset
 
 
 class EventOccurrencesView(viewsets.ModelViewSet):

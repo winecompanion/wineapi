@@ -63,8 +63,7 @@ class AllowWineryOwnerOrReadOnly(BasePermission):
     """
 
     def has_permission(self, request, view):
-
-        return view.action in SAFE_ACTIONS or request.user.is_authenticated and request.user.winery
+        return view.action not in NOT_SAFE_ACTIONS or request.user.is_authenticated and request.user.winery
 
     def has_object_permission(self, request, view, obj):
         obj_winery = None

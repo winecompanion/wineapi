@@ -132,6 +132,8 @@ class Event(models.Model):
             for reservation in reservations:
                 reservation.cancel()
         self.save()
+        success_message = 'The event has been cancelled'
+        return success_message
 
     def __str__(self):
         return self.name
@@ -190,6 +192,8 @@ class Reservation(models.Model):
     def cancel(self):
         self.status = RESERVATION_CANCELLED
         self.save()
+        success_message = 'The reservation has been cancelled'
+        return success_message
 
 
 class ImagesWinery(models.Model):
