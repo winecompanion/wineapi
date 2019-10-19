@@ -5,7 +5,7 @@ from django.contrib.gis.db.models import PointField
 from django.contrib.gis import geos
 from django.contrib.gis.measure import Distance
 from django.core.validators import MaxValueValidator, MinValueValidator
-
+from django.core.mail import send_mail
 
 from . import RESERVATION_STATUS, RESERVATION_CONFIRMED, VARIETALS
 
@@ -195,3 +195,7 @@ class ImagesEvent(models.Model):
         related_name='images',
         on_delete=models.CASCADE
     )
+
+class Mail():
+    def send_mail(subject, message, mailfrom, mailto):
+        send_mail(subject, message, mailfrom, mailto, fail_silently=False)
