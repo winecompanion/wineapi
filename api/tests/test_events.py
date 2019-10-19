@@ -733,3 +733,12 @@ class TestEvents(TestCase):
             res.data.get('url'),
             reverse('restaurant-occurrences-detail', kwargs={'restaurant_pk': restaurant.id, 'pk': 1})
         )
+
+    def test_cancel_event_endpoint(self):
+        event = Event.objects.create(name='Test Event', description='Desc 1', winery=self.winery, price=0.0)
+        res = self.client.post(
+            reverse('event-cancel-event', kwargs={'pk': event.id})
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        event.refresh_from_db()
+        self.assertNotEqual(event.cancelled, None)

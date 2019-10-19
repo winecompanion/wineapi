@@ -11,7 +11,7 @@ from rest_framework.reverse import reverse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from . import RESERVATION_CANCELLED, VARIETALS
+from . import VARIETALS
 from users.permissions import (
     AdminOrReadOnly,
     AllowCreateButUpdateOwnerOnly,
@@ -52,7 +52,8 @@ from .filters import EventFilter
 
 class EventsView(viewsets.ModelViewSet):
     queryset = Event.objects.filter(
-        occurrences__start__gt=datetime.now()
+        occurrences__start__gt=datetime.now(),
+        cancelled__isnull=True,
     ).exclude(categories__name__icontains='restaurant').distinct()
 
     serializer_class = EventSerializer
@@ -72,6 +73,12 @@ class EventsView(viewsets.ModelViewSet):
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         event = serializer.create(serializer.validated_data)
         return Response({'url': reverse('event-detail', args=[event.id])}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], name='cancel-event')
+    def cancel_event(self, request, pk):
+        event = get_object_or_404(Event, id=pk)
+        event.cancel()
+        return Response({'detail': 'The event has been cancelled'}, status=status.HTTP_200_OK)
 
 
 class WineryView(viewsets.ModelViewSet):
@@ -240,8 +247,7 @@ class ReservationView(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], name='cancel-reservation')
     def cancel_reservation(self, request, pk):
         reservation = get_object_or_404(Reservation, id=pk)
-        reservation.status = RESERVATION_CANCELLED
-        reservation.save()
+        reservation.cancel()
         return Response({'detail': 'The reservation has been cancelled'}, status=status.HTTP_200_OK)
 
 
@@ -279,8 +285,6 @@ class FileUploadView(APIView):
         model = None
         kwargs = {}
 
-        # permission_classes = help
-
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         if serializer.validated_data['type'] == 'winery':
@@ -299,7 +303,9 @@ class FileUploadView(APIView):
 
 class RestaurantsView(EventsView):
     queryset = Event.objects.filter(
-        occurrences__start__gt=datetime.now(), categories__name__icontains='restaurant'
+        occurrences__start__gt=datetime.now(),
+        categories__name__icontains='restaurant',
+        cancelled__isnull=True,
     ).distinct()
 
 

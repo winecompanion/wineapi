@@ -1,4 +1,4 @@
-import datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from django.db import models
 from django.contrib.gis.db.models import PointField
@@ -7,7 +7,7 @@ from django.contrib.gis.measure import Distance
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 
-from . import RESERVATION_STATUS, RESERVATION_CONFIRMED, VARIETALS
+from . import RESERVATION_STATUS, RESERVATION_CANCELLED, RESERVATION_CONFIRMED, VARIETALS
 
 
 class Country(models.Model):
@@ -119,10 +119,19 @@ class Event(models.Model):
         dates = []
         days_between = (end - start).days + 1
         for i in range(days_between):
-            day = start + datetime.timedelta(days=i)
+            day = start + timedelta(days=i)
             if day.weekday() in weekdays:
                 dates.append(day)
         return dates
+
+    def cancel(self):
+        self.cancelled = datetime.now()
+        occurrences = self.occurrences.filter(start__gt=date.today())
+        for occurrence in occurrences:
+            reservations = occurrence.reservation_set.all()
+            for reservation in reservations:
+                reservation.cancel()
+        self.save()
 
     def __str__(self):
         return self.name
@@ -176,7 +185,11 @@ class Reservation(models.Model):
     )
 
     def __str__(self):
-        return '{}: {}, {}'.format(str(self.id), self.user.name, str(self.paid_amount))
+        return '{}: {}, {}'.format(str(self.id), self.user.first_name, str(self.paid_amount))
+
+    def cancel(self):
+        self.status = RESERVATION_CANCELLED
+        self.save()
 
 
 class ImagesWinery(models.Model):
