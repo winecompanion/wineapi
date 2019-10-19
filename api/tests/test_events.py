@@ -22,6 +22,7 @@ class TestEvents(TestCase):
                 name='Bodega1',
                 description='Hola',
                 website='hola.com',
+                available_since=datetime.now()
         )
         self.winery_user = WineUser.objects.create(
             email='testuser@winecompanion.com',
@@ -748,3 +749,13 @@ class TestEvents(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         event.refresh_from_db()
         self.assertNotEqual(event.cancelled, None)
+
+    def test_event_creation_winery_not_available(self):
+        self.client.force_login(self.winery_user)
+        self.winery.available_since = None
+        self.winery.save()
+        response = self.client.post(
+            reverse("event-list"), data=self.valid_data['one_schedule_no_to_date'], content_type="application/json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data.get('detail').code, 'permission_denied')

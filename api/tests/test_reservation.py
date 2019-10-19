@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.test import TestCase, Client
 from django.urls import reverse
 
@@ -18,6 +19,7 @@ class TestReservation(TestCase):
                 name='My Winery',
                 description='Test Winery',
                 website='website.com',
+                available_since=datetime.now()
         )
         self.user = WineUser.objects.create_user(
             email='user@user.com',

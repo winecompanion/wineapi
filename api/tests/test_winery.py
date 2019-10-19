@@ -60,6 +60,27 @@ class TestWinery(TestCase):
         )
         self.assertEqual(status.HTTP_401_UNAUTHORIZED, response.status_code)
 
+    def test_winery_approval(self):
+        admin = WineUser.objects.create_superuser(
+            email='admin@admin.com',
+            password='12345678',
+            first_name='User',
+            last_name='Test',
+            gender=GENDER_OTHER,
+            language=LANGUAGE_ENGLISH,
+            country=Country.objects.create(name='Test'),
+        )
+        winery = Winery.objects.create(name='Test Winery')
+        self.assertEqual(winery.available_since, None)
+
+        self.client.force_login(admin)
+        response = self.client.post(
+            reverse('approve-wineries-approve', kwargs={'pk': winery.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        winery.refresh_from_db()
+        self.assertNotEqual(winery.available_since, None)
+
 
 class TestWines(TestCase):
     def setUp(self):
