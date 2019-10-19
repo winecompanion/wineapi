@@ -448,6 +448,14 @@ class ReportsView(APIView):
                 .values("month", "count")
                 .order_by("month")
             ),
+            "attendees_languages": (
+                Reservation.objects
+                .values("user__language")
+                .annotate(language=F("user__language"))
+                .annotate(count=Count("id"))
+                .values("language", "count")
+                .filter(event_occurrence__event__in=user_events)
+            ),
         }
 
         # Awful hack to return months with count = 0

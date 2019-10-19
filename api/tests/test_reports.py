@@ -11,7 +11,14 @@ from api.models import (
     Reservation,
     Winery,
 )
-from users import GENDER_OTHER, LANGUAGE_ENGLISH
+from users import (
+    GENDER_MALE,
+    GENDER_FEMALE,
+    GENDER_OTHER,
+    LANGUAGE_SPANISH,
+    LANGUAGE_ENGLISH,
+    LANGUAGE_FRENCH,
+)
 from users.models import WineUser
 
 
@@ -35,6 +42,26 @@ class TestReports(TestCase):
             phone='2616489178',
             country=self.country,
             winery=self.winery,
+        )
+        self.tourist_1 = WineUser.objects.create_user(
+            email='example2@winecompanion.com',
+            password='testuserpass',
+            first_name='First Name',
+            last_name='Last Name',
+            gender=GENDER_MALE,
+            language=LANGUAGE_SPANISH,
+            phone='2616489178',
+            country=self.country,
+        )
+        self.tourist_2 = WineUser.objects.create_user(
+            email='example3@winecompanion.com',
+            password='testuserpass',
+            first_name='First Name',
+            last_name='Last Name',
+            gender=GENDER_FEMALE,
+            language=LANGUAGE_FRENCH,
+            phone='2616489178',
+            country=self.country,
         )
         self.event_category = EventCategory.objects.create(name="Test category")
         self.event_1 = Event.objects.create(
@@ -63,18 +90,25 @@ class TestReports(TestCase):
             vacancies=50,
             event=self.event_1
         )
-        self.reservation = Reservation.objects.create(
+        self.reservation_1 = Reservation.objects.create(
             attendee_number=2,
             observations='No kids',
             paid_amount=1000.0,
-            user=self.user,
+            user=self.tourist_1,
             event_occurrence=self.event_occ_october,
         )
-        self.reservation = Reservation.objects.create(
+        self.reservation_2 = Reservation.objects.create(
             attendee_number=2,
-            observations='',
-            paid_amount=1400.0,
-            user=self.user,
+            observations='No kids',
+            paid_amount=1000.0,
+            user=self.tourist_2,
+            event_occurrence=self.event_occ_october,
+        )
+        self.reservation_3 = Reservation.objects.create(
+            attendee_number=2,
+            observations='No kids',
+            paid_amount=1000.0,
+            user=self.tourist_2,
             event_occurrence=self.event_occ_december,
         )
 
@@ -86,7 +120,7 @@ class TestReports(TestCase):
         expected_reservations_by_event = [
             {
                 "name": self.event_1.name,
-                "count": 2,
+                "count": 3,
             }
         ]
         expected_reservations_by_month = [
@@ -128,7 +162,7 @@ class TestReports(TestCase):
             },
             {
                 "month": 10,
-                "count": 1,
+                "count": 2,
             },
             {
                 "month": 11,
@@ -139,7 +173,18 @@ class TestReports(TestCase):
                 "count": 1,
             },
         ]
+        expected_attendees_languages = [
+            {
+                'language': 'French',
+                'count': 2,
+            },
+            {
+                'language': 'Spanish',
+                'count': 1,
+            },
+        ]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(list(response.data['reservations_by_event']), expected_reservations_by_event)
         self.assertEqual(list(response.data['reservations_by_month']), expected_reservations_by_month)
+        self.assertEqual(list(response.data['attendees_languages']), expected_attendees_languages)
