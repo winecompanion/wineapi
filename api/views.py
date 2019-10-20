@@ -6,16 +6,20 @@ from rest_framework import filters
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet
 
 from . import VARIETALS
 from users.permissions import (
+    AdminOnly,
     AdminOrReadOnly,
     AllowCreateButUpdateOwnerOnly,
     AllowWineryOwnerOrReadOnly,
+    CreateOnlyIfWineryApproved,
     IsOwnerOrReadOnly,
     ListAdminOnly,
     LoginRequiredToEdit,
@@ -61,7 +65,7 @@ class EventsView(viewsets.ModelViewSet):
     # filter elements (must use field= as query params )
     filterset_class = EventFilter
 
-    permission_classes = [AllowWineryOwnerOrReadOnly]
+    permission_classes = [AllowWineryOwnerOrReadOnly & CreateOnlyIfWineryApproved]
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -95,7 +99,7 @@ class EventsView(viewsets.ModelViewSet):
 
 
 class WineryView(viewsets.ModelViewSet):
-    queryset = Winery.objects.all()
+    queryset = Winery.objects.filter(available_since__isnull=False)
     serializer_class = WinerySerializer
 
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
@@ -397,3 +401,21 @@ class RestaurantOccurrencesView(viewsets.ModelViewSet):
     def get_queryset(self):
         event = get_object_or_404(Event, id=self.kwargs['restaurant_pk'])
         return EventOccurrence.objects.filter(event=event.id)
+
+
+class WineryApprovalView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
+    queryset = Winery.objects.filter(available_since__isnull=True)
+    serializer_class = WinerySerializer
+
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    search_fields = ['name', 'description']
+    http_method_names = ['get', 'head', 'options', 'post']
+
+    permission_classes = [AdminOnly]
+
+    @action(detail=True, methods=['post'], name='approve')
+    def approve(self, request, pk):
+        winery = get_object_or_404(Winery, id=pk)
+        winery.available_since = datetime.now()
+        winery.save()
+        return Response({'detail': 'Winery successfully approved'}, status=status.HTTP_200_OK)
