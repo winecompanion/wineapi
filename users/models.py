@@ -9,12 +9,13 @@ from django.db import models
 from api.models import Winery, Country
 from api.serializers import WinerySerializer
 
-from . import GENDERS, LANGUAGES, TOURIST, WINERY
+from . import ADMIN, GENDERS, LANGUAGES, TOURIST, WINERY
 
 
 USER_TYPE_CHOICES = [
     (TOURIST, 'TOURIST'),
     (WINERY, 'WINERY'),
+    (ADMIN, 'ADMIN')
 ]
 
 
@@ -45,6 +46,8 @@ class WineUserManager(BaseUserManager):
 
         if not getattr(extra_fields, 'country', None):
             extra_fields['country'] = Country.objects.all().first()
+
+        extra_fields['user_type'] = ADMIN
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
