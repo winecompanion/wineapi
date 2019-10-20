@@ -71,7 +71,7 @@ class TestWinery(TestCase):
             country=Country.objects.create(name='Test'),
         )
         winery = Winery.objects.create(name='Test Winery')
-        self.assertEqual(winery.available_since, None)
+        self.assertIsNone(winery.available_since)
 
         self.client.force_login(admin)
         response = self.client.post(
@@ -79,7 +79,7 @@ class TestWinery(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         winery.refresh_from_db()
-        self.assertNotEqual(winery.available_since, None)
+        self.assertIsNotNone(winery.available_since)
 
 
 class TestWines(TestCase):

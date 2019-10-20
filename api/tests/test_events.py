@@ -748,7 +748,7 @@ class TestEvents(TestCase):
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         event.refresh_from_db()
-        self.assertNotEqual(event.cancelled, None)
+        self.assertIsNotNone(event.cancelled)
 
     def test_event_creation_winery_not_available(self):
         self.client.force_login(self.winery_user)
