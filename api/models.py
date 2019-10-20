@@ -10,6 +10,11 @@ from django.core.mail import send_mail
 from . import RESERVATION_STATUS, RESERVATION_CANCELLED, RESERVATION_CONFIRMED, VARIETALS
 
 
+class Mail():
+    def send_mail(subject, message, mailfrom, mailto):
+        send_mail(subject, message, mailfrom, mailto, fail_silently=False)
+
+
 class Country(models.Model):
     name = models.CharField(max_length=30)
 
@@ -192,6 +197,11 @@ class Reservation(models.Model):
     def cancel(self):
         self.status = RESERVATION_CANCELLED
         self.save()
+        info = 'Your reservation in {} with number {} for the day {} has been cancelled'
+        mailfrom = 'winecompanion19@gmail.com',
+        subject = 'Winecompanion'
+        body = info.format(self.event_occurrence.event.winery.name, self.id, self.event_occurrence.start)
+        Mail.send_mail(subject, body, mailfrom, [self.user.email])
         success_message = 'The reservation has been cancelled'
         return success_message
 
@@ -212,8 +222,3 @@ class ImagesEvent(models.Model):
         related_name='images',
         on_delete=models.CASCADE
     )
-
-
-class Mail():
-    def send_mail(subject, message, mailfrom, mailto):
-        send_mail(subject, message, mailfrom, mailto, fail_silently=False)
