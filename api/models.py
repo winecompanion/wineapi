@@ -7,12 +7,25 @@ from django.contrib.gis.measure import Distance
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.mail import send_mail
 
-from . import RESERVATION_STATUS, RESERVATION_CANCELLED, RESERVATION_CONFIRMED, VARIETALS
+from . import (
+    RESERVATION_STATUS,
+    RESERVATION_CANCELLED,
+    RESERVATION_CONFIRMED,
+    VARIETALS,
+    WEEKDAYS,
+)
 
 
 class Mail():
+    @staticmethod
     def send_mail(subject, message, mailfrom, mailto):
         send_mail(subject, message, mailfrom, mailto, fail_silently=False)
+
+
+class ContactInfo(models.Model):
+    description = models.TextField(null=True, blank=True)
+    email = models.EmailField()
+    phone = models.CharField(max_length=15)
 
 
 class Country(models.Model):
@@ -37,6 +50,7 @@ class Winery(models.Model):
     website = models.CharField(max_length=40, blank=True)
     available_since = models.DateTimeField(null=True, blank=True)
     location = PointField(u"longitude/latitude", geography=True, blank=True, null=True)
+    contact = models.OneToOneField(ContactInfo, null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         verbose_name = 'Winery'
@@ -114,6 +128,8 @@ class Event(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))]
     )
+    location = PointField(u"longitude/latitude", geography=True, blank=True, null=True)
+    contact = models.OneToOneField(ContactInfo, null=True, blank=True, on_delete=models.SET_NULL)
 
     @staticmethod
     def calculate_dates_in_threshold(start, end, weekdays):
@@ -221,4 +237,27 @@ class ImagesEvent(models.Model):
         Event,
         related_name='images',
         on_delete=models.CASCADE
+    )
+
+
+class BusinessHours(models.Model):
+    day_from = models.IntegerField(choices=WEEKDAYS)
+    day_to = models.IntegerField(choices=WEEKDAYS, null=True, blank=True)
+    hour_from = models.TimeField()
+    hour_to = models.TimeField()
+    aditional_from = models.TimeField(null=True, blank=True)
+    aditional_to = models.TimeField(null=True, blank=True)
+    winery = models.ForeignKey(
+        Winery,
+        related_name='business_hours',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+    restaurant = models.ForeignKey(
+        Event,
+        related_name='business_hours',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )

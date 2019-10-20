@@ -6,7 +6,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from django.db import models
 
-from api.models import Winery, Country
+from api.models import Country
 from api.serializers import WinerySerializer
 
 from . import ADMIN, GENDERS, LANGUAGES, TOURIST, WINERY
@@ -121,9 +121,12 @@ class UserSerializer(serializers.ModelSerializer):
         winery_data = validated_data.pop('winery', None)
         user = WineUser.objects.create_user(**validated_data)
         if winery_data:
-            winery = Winery.objects.create(**winery_data)
-            user.winery = winery
-            user.user_type = WINERY
+            serializer = WinerySerializer(data=winery_data)
+            if serializer.is_valid():
+                winery = serializer.save()
+                user.winery = winery
+                user.user_type = WINERY
+
         user.save()
         return user
 

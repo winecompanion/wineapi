@@ -9,6 +9,8 @@ from rest_framework.exceptions import ParseError
 from rest_framework import serializers
 
 from .models import (
+    BusinessHours,
+    ContactInfo,
     Country,
     Event,
     EventOccurrence,
@@ -20,6 +22,38 @@ from .models import (
     Rate,
     Reservation,
 )
+
+
+class ContactInfoSerializer(serializers.ModelSerializer):
+    """Serializer for contact info"""
+
+    class Meta:
+        model = ContactInfo
+        fields = ['phone', 'email', 'description']
+
+
+class BusinessHoursSerializer(serializers.ModelSerializer):
+    """Serializer for business hours"""
+    winery = serializers.Field(write_only=True, required=False)
+    restaurant = serializers.Field(write_only=True, required=False)
+
+    class Meta:
+        model = BusinessHours
+        fields = [
+            'day_from',
+            'day_to',
+            'hour_from',
+            'hour_to',
+            'aditional_from',
+            'aditional_to',
+            'winery',
+            'restaurant',
+        ]
+
+    def to_representation(self, value):
+        self.fields['day_from'] = serializers.CharField(source='get_day_from_display')
+        self.fields['day_to'] = serializers.CharField(source='get_day_to_display')
+        return super().to_representation(value)
 
 
 class ScheduleSerializer(serializers.Serializer):
@@ -85,6 +119,8 @@ class EventSerializer(serializers.ModelSerializer):
     vacancies = serializers.IntegerField(write_only=True)
     images = ImageUrlField(read_only=True, many=True)
     winery = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    contact = ContactInfoSerializer(required=False, allow_null=True)
+    business_hours = BusinessHoursSerializer(many=True, required=False)
 
     class Meta:
         model = Event
@@ -103,6 +139,9 @@ class EventSerializer(serializers.ModelSerializer):
             'schedule',
             'vacancies',
             'images',
+            'contact',
+            'location',
+            'business_hours',
         ]
 
     def create(self, data):
@@ -120,7 +159,12 @@ class EventSerializer(serializers.ModelSerializer):
         vacancies = data.pop('vacancies')
         categories = data.pop('categories')
         tags = data.pop('tags') if 'tags' in data else []
+        contact = data.pop('contact') if 'contact' in data else []
+        business_hours = data.pop('business_hours') if 'business_hours' in data else []
         data['winery'] = request.user.winery
+        if contact:
+            data['contact'] = ContactInfo.objects.create(**contact)
+
         event = Event.objects.create(**data)
 
         for elem in schedule:
@@ -158,6 +202,9 @@ class EventSerializer(serializers.ModelSerializer):
 
         for tag in tags:
             event.tags.add(get_object_or_404(Tag, name=tag['name']))
+
+        for hour in business_hours:
+            BusinessHours.objects.create(restaurant=event, **hour)
 
         return event
 
@@ -259,10 +306,33 @@ class WinerySerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     wine_lines = WineLineSerializer(many=True, read_only=True)
     images = ImageUrlField(read_only=True, many=True)
+    contact = ContactInfoSerializer(required=False, allow_null=True)
+    business_hours = BusinessHoursSerializer(many=True, required=False)
 
     class Meta:
         model = Winery
-        fields = ('id', 'name', 'description', 'website', 'wine_lines', 'location', 'images')
+        fields = (
+            'id',
+            'name',
+            'description',
+            'website',
+            'wine_lines',
+            'location',
+            'images',
+            'contact',
+            'business_hours',
+        )
+
+    def create(self, data):
+        # import ipdb; ipdb.set_trace()
+        contact = data.pop('contact') if 'contact' in data else []
+        business_hours = data.pop('business_hours') if 'business_hours' in data else []
+        if contact:
+            data['contact'] = ContactInfo.objects.create(**contact)
+        winery = Winery.objects.create(**data)
+        for hour in business_hours:
+            BusinessHours.objects.create(winery=winery, **hour)
+        return winery
 
 
 class EventBriefSerializer(serializers.ModelSerializer):

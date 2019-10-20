@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
@@ -228,7 +228,7 @@ class CountryView(viewsets.ModelViewSet):
     serializer_class = CountrySerializer
     model_class = Country
 
-    # TODO: permission_classes
+    permission_classes = [AdminOrReadOnly]
 
     def create(self, request):
         serializer = CountrySerializer(data=request.data)
@@ -284,6 +284,11 @@ class ReservationView(viewsets.ModelViewSet):
         reservation = get_object_or_404(Reservation, id=pk)
         if reservation.user.id != request.user.id:
             return Response({'detail': 'Permission Denied'}, status=status.HTTP_403_FORBIDDEN)
+        if reservation.event_occurrence.start < (datetime.now() + timedelta(days=1)):
+            return Response(
+                {'detail': 'The reservation cannot be cancelled with less than 24 hours'},
+                status=status.HTTP_403_FORBIDDEN
+            )
         message = reservation.cancel()
         return Response({'detail': message}, status=status.HTTP_200_OK)
 
@@ -339,6 +344,13 @@ class FileUploadView(APIView):
 
 
 class RestaurantsView(EventsView):
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        restaurant = serializer.create(serializer.validated_data)
+        return Response({'url': reverse('restaurant-detail', args=[restaurant.id])}, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
         all_restaurants = Event.objects.filter(
