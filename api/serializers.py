@@ -262,7 +262,7 @@ class WinerySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Winery
-        fields = ('id', 'name', 'description', 'website', 'wine_lines', 'available_since', 'location', 'images')
+        fields = ('id', 'name', 'description', 'website', 'wine_lines', 'location', 'images')
 
 
 class EventBriefSerializer(serializers.ModelSerializer):

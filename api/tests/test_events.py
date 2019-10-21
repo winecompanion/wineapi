@@ -22,6 +22,7 @@ class TestEvents(TestCase):
                 name='Bodega1',
                 description='Hola',
                 website='hola.com',
+                available_since=datetime.now()
         )
         self.winery_user = WineUser.objects.create(
             email='testuser@winecompanion.com',
@@ -122,7 +123,6 @@ class TestEvents(TestCase):
 
         self.event_required_fields = ['name', 'description', 'price', 'categories', 'schedule', 'vacancies']
         self.client = Client()
-        self.client.force_login(self.winery_user)
 
     def test_dates_between_threshold(self):
         start = date(2019, 8, 18)
@@ -145,6 +145,7 @@ class TestEvents(TestCase):
        ('multiple_schedules_with_weekdays', 12),
     ])
     def test_event_creation_endpoint_with_different_schedules(self, data_key, expected_occurrences_count):
+        self.client.force_login(self.winery_user)
         data = self.valid_data[data_key]
         serializer = EventSerializer(data=data)
         self.assertTrue(serializer.is_valid())
@@ -159,6 +160,7 @@ class TestEvents(TestCase):
         self.assertEqual(expected_occurrences_count, len(db_event.occurrences.all()))
 
     def test_invalid_event_creation(self):
+        self.client.force_login(self.winery_user)
         data = {}
         response = self.client.post(reverse('event-list'), data=data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -439,6 +441,7 @@ class TestEvents(TestCase):
         self.assertNotIn(serializer3.data, res.data)
 
     def test_invalid_schedule(self):
+        self.client.force_login(self.winery_user)
         data = self.invalid_data['empty_schedule']
         serializer = EventSerializer(data=data)
         self.assertFalse(serializer.is_valid())
@@ -448,6 +451,7 @@ class TestEvents(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_event_creation_with_tags(self):
+        self.client.force_login(self.winery_user)
         data = self.valid_data['one_schedule_no_to_date']
         tag1 = Tag.objects.create(name='test tag')
         tag2 = Tag.objects.create(name='other tag')
@@ -681,6 +685,7 @@ class TestEvents(TestCase):
         self.assertIn(serializer.data, res.data)
 
     def test_event_occurrences_post(self):
+        self.client.force_login(self.winery_user)
         event = Event.objects.create(name='Test Event', description='Desc 1', winery=self.winery, price=0.0)
         res = self.client.post(
             reverse('event-occurrences-list', kwargs={'event_pk': event.id}),
@@ -715,6 +720,7 @@ class TestEvents(TestCase):
         self.assertIn(serializer.data, res.data)
 
     def test_restaurant_occurrences_post(self):
+        self.client.force_login(self.winery_user)
         restaurant = Event.objects.create(name='Test Restaurant', description='Desc 1', winery=self.winery, price=0.0)
         restaurant.categories.add(self.category_restaurant)
         restaurant.save()
@@ -733,3 +739,23 @@ class TestEvents(TestCase):
             res.data.get('url'),
             reverse('restaurant-occurrences-detail', kwargs={'restaurant_pk': restaurant.id, 'pk': 1})
         )
+
+    def test_cancel_event_endpoint(self):
+        self.client.force_login(self.winery_user)
+        event = Event.objects.create(name='Test Event', description='Desc 1', winery=self.winery, price=0.0)
+        res = self.client.post(
+            reverse('event-cancel-event', kwargs={'pk': event.id})
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        event.refresh_from_db()
+        self.assertIsNotNone(event.cancelled)
+
+    def test_event_creation_winery_not_available(self):
+        self.client.force_login(self.winery_user)
+        self.winery.available_since = None
+        self.winery.save()
+        response = self.client.post(
+            reverse("event-list"), data=self.valid_data['one_schedule_no_to_date'], content_type="application/json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data.get('detail').code, 'permission_denied')

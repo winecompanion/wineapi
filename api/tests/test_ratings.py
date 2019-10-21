@@ -127,4 +127,4 @@ class TestRatings(TestCase):
         response = self.client.get(
             reverse('event-detail', kwargs={'pk': self.event.id}),
         )
-        self.assertEqual(response.data.get('current_user_rating'), None)
+        self.assertIsNone(response.data.get('current_user_rating'))

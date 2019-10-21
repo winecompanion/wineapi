@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.test import TestCase, Client
 from django.urls import reverse
 
@@ -14,6 +15,12 @@ from users.models import WineUser
 class TestReservation(TestCase):
     def setUp(self):
         self.country = Country.objects.create(name='Argentina')
+        self.winery = Winery.objects.create(
+                name='My Winery',
+                description='Test Winery',
+                website='website.com',
+                available_since=datetime.now()
+        )
         self.user = WineUser.objects.create_user(
             email='user@user.com',
             password='12345678',
@@ -21,12 +28,8 @@ class TestReservation(TestCase):
             last_name='Test',
             gender=GENDER_OTHER,
             language=LANGUAGE_ENGLISH,
-            country=self.country
-        )
-        self.winery = Winery.objects.create(
-                name='My Winery',
-                description='Test Winery',
-                website='website.com',
+            country=self.country,
+            winery=self.winery,
         )
         self.event = Event.objects.create(
             name='Wanted Event',
@@ -198,7 +201,7 @@ class TestReservation(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_get_reservation_status(self):
+    def test_cancel_reservation(self):
         self.client.force_login(self.user)
         reservation = Reservation.objects.create(**self.valid_creation_data)
         self.assertEqual(reservation.status, RESERVATION_CONFIRMED)
@@ -208,3 +211,23 @@ class TestReservation(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         reservation.refresh_from_db()
         self.assertEqual(reservation.status, RESERVATION_CANCELLED)
+
+    def test_cancel_event_cancels_reservations(self):
+        self.client.force_login(self.user)
+        reservation = Reservation.objects.create(**self.valid_creation_data)
+
+        old_occurrence = EventOccurrence.objects.create(
+            start='2018-10-31T20:00:00',
+            end='2018-10-31T23:00:00',
+            vacancies=50,
+            event=self.event
+        )
+        self.valid_creation_data['event_occurrence'] = old_occurrence
+        old_reservation = Reservation.objects.create(**self.valid_creation_data)
+
+        self.client.post(
+            reverse('event-cancel-event', kwargs={'pk': self.event.id})
+        )
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.status, RESERVATION_CANCELLED)
+        self.assertEqual(old_reservation.status, RESERVATION_CONFIRMED)

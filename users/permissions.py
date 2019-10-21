@@ -55,6 +55,15 @@ class ListAdminOnly(BasePermission):
         return view.action != 'list' or request.user and request.user.is_staff
 
 
+class AdminOnly(BasePermission):
+    """
+    Custom permission to only allow access only for admins
+    """
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_staff
+
+
 class AllowWineryOwnerOrReadOnly(BasePermission):
     """
     Custom permission:
@@ -63,8 +72,7 @@ class AllowWineryOwnerOrReadOnly(BasePermission):
     """
 
     def has_permission(self, request, view):
-
-        return view.action in SAFE_ACTIONS or request.user.is_authenticated and request.user.winery
+        return view.action not in NOT_SAFE_ACTIONS or request.user.is_authenticated and request.user.winery
 
     def has_object_permission(self, request, view, obj):
         obj_winery = None
@@ -111,3 +119,9 @@ class LoginRequiredToEdit(BasePermission):
 
     def has_permission(self, request, view):
         return view.action in SAFE_ACTIONS or request.user.is_authenticated
+
+
+class CreateOnlyIfWineryApproved(BasePermission):
+
+    def has_permission(self, request, view):
+        return view.action != 'create' or request.user.winery.available_since

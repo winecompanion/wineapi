@@ -3,6 +3,7 @@ from django.urls import include, path
 from rest_framework_nested import routers
 
 from api.views import (
+    WineryApprovalView,
     CountryView,
     EventsView,
     EventCategoryView,
@@ -53,6 +54,7 @@ router.register(r'tags', TagView, basename='tags')
 router.register(r'countries', CountryView, basename='countries')
 router.register(r'event-categories', EventCategoryView, basename='event-categories')
 router.register(r'reservations', ReservationView, basename='reservations')
+router.register(r'approve-wineries', WineryApprovalView, basename='approve-wineries')
 
 urlpatterns = [
     path('', include(router.urls)),

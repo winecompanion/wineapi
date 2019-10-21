@@ -9,12 +9,13 @@ from django.db import models
 from api.models import Winery, Country
 from api.serializers import WinerySerializer
 
-from . import GENDERS, LANGUAGES, TOURIST, WINERY
+from . import ADMIN, GENDERS, LANGUAGES, TOURIST, WINERY
 
 
 USER_TYPE_CHOICES = [
     (TOURIST, 'TOURIST'),
     (WINERY, 'WINERY'),
+    (ADMIN, 'ADMIN')
 ]
 
 
@@ -44,7 +45,9 @@ class WineUserManager(BaseUserManager):
         extra_fields.setdefault('is_active', True)
 
         if not getattr(extra_fields, 'country', None):
-            extra_fields['country'] = Country.objects.get(id=1)
+            extra_fields['country'] = Country.objects.all().first()
+
+        extra_fields['user_type'] = ADMIN
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -127,4 +130,5 @@ class UserSerializer(serializers.ModelSerializer):
     def to_representation(self, obj):
         self.fields['gender'] = serializers.CharField(source='get_gender_display')
         self.fields['language'] = serializers.CharField(source='get_language_display')
+        self.fields['country'] = serializers.CharField(source='country.name')
         return super().to_representation(obj)

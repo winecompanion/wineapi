@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from . import LANGUAGES, GENDERS
 from .models import WineUser, UserSerializer
-from api.models import Reservation
+from api.models import Reservation, Mail
 from api.serializers import ReservationSerializer
 
 from .permissions import (
@@ -26,6 +26,10 @@ class WineUserView(viewsets.ModelViewSet):
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         wine_user = serializer.create(serializer.validated_data)
+        subject = 'Welcome to Winecompanion'
+        body = 'User was created succesfully'
+        mailfrom = 'winecompanion19@gmail.com'
+        Mail.send_mail(subject, body, mailfrom, [wine_user.email])
         return Response({'url': reverse('users-detail', args=[wine_user.id])}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'], name='get-user-reservations')
