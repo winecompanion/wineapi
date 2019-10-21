@@ -503,7 +503,7 @@ class WineryApprovalView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
         winery.save()
         return Response({'detail': 'Winery successfully approved'}, status=status.HTTP_200_OK)
 
-        
+
 class ReportsView(APIView):
     def get(self, request, *args, **kwargs):
         user_events = request.user.winery.events.all()
