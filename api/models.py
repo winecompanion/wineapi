@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from django.db import models
+from django.conf import settings
 from django.contrib.gis.db.models import PointField
 from django.contrib.gis import geos
 from django.contrib.gis.measure import Distance
@@ -11,8 +12,10 @@ from . import RESERVATION_STATUS, RESERVATION_CANCELLED, RESERVATION_CONFIRMED, 
 
 
 class Mail():
+    @staticmethod
     def send_mail(subject, message, mailfrom, mailto):
-        send_mail(subject, message, mailfrom, mailto, fail_silently=False)
+        if settings.SEND_EMAILS:
+            send_mail(subject, message, mailfrom, mailto, fail_silently=False)
 
 
 class Country(models.Model):
