@@ -71,8 +71,8 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
 
     winery = models.ForeignKey('api.winery', null=True, blank=True, on_delete=models.CASCADE)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    gender = models.IntegerField(choices=GENDERS)
-    language = models.IntegerField(choices=LANGUAGES)
+    gender = models.CharField(choices=GENDERS, max_length=8)
+    language = models.CharField(choices=LANGUAGES, max_length=8)
     phone = models.CharField(max_length=15)
 
     objects = WineUserManager()

@@ -11,6 +11,7 @@ from api.views import (
     FileUploadView,
     MapsView,
     RatingView,
+    ReportsView,
     ReservationView,
     RestaurantsView,
     RestaurantOccurrencesView,
@@ -64,6 +65,7 @@ urlpatterns = [
     path('', include(restaurant_occurrences_router.urls)),
     path('', include(restaurant_ratings_router.urls)),
     path('maps/', MapsView.as_view()),
+    path('reports/reservations/', ReportsView.as_view(), name='reservation-count-reports'),
     path('varietals/', VarietalsView.as_view(), name='varietals'),
     path('upload/', FileUploadView.as_view()),
 ]

@@ -109,7 +109,7 @@ class Event(models.Model):
     name = models.CharField(max_length=80)
     description = models.TextField()
     cancelled = models.DateTimeField(null=True, blank=True)
-    winery = models.ForeignKey(Winery, on_delete=models.PROTECT)
+    winery = models.ForeignKey(Winery, on_delete=models.PROTECT, related_name='events')
     categories = models.ManyToManyField(EventCategory)
     tags = models.ManyToManyField(Tag, blank=True)
     price = models.DecimalField(
