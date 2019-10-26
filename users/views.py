@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 from . import LANGUAGES, GENDERS
 from .models import WineUser, UserSerializer
 from api.models import Reservation, Mail
@@ -26,10 +29,16 @@ class WineUserView(viewsets.ModelViewSet):
         if not serializer.is_valid():
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         wine_user = serializer.create(serializer.validated_data)
-        subject = 'Welcome to Winecompanion'
-        body = 'User was created succesfully'
+
+        # send email
         mailfrom = 'winecompanion19@gmail.com'
-        Mail.send_mail(subject, body, mailfrom, [wine_user.email])
+        subject = 'Bienvenido a Winecompanion'
+        html_message = render_to_string(
+            'user_registration_template.html',
+        )
+        plain_message = strip_tags(html_message)
+        Mail.send_mail(subject, plain_message, mailfrom, [wine_user.email], html_message=html_message)
+
         return Response({'url': reverse('users-detail', args=[wine_user.id])}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'], name='get-user-reservations')

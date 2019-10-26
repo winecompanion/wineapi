@@ -7,15 +7,17 @@ from django.contrib.gis import geos
 from django.contrib.gis.measure import Distance
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from . import RESERVATION_STATUS, RESERVATION_CANCELLED, RESERVATION_CONFIRMED, VARIETALS
 
 
 class Mail():
     @staticmethod
-    def send_mail(subject, message, mailfrom, mailto):
+    def send_mail(subject, message, mailfrom, mailto, html_message=None, fail_silently=False):
         if settings.SEND_EMAILS:
-            send_mail(subject, message, mailfrom, mailto, fail_silently=False)
+            send_mail(subject, message, mailfrom, mailto, html_message=html_message, fail_silently=fail_silently)
 
 
 class Country(models.Model):
@@ -198,6 +200,9 @@ class Reservation(models.Model):
         return '{}: {}, {}'.format(str(self.id), self.user.first_name, str(self.paid_amount))
 
     def cancel(self):
+        if self.status == RESERVATION_CANCELLED:
+            return 'The reservation was already cancelled'
+
         self.status = RESERVATION_CANCELLED
         self.save()
 
@@ -206,13 +211,20 @@ class Reservation(models.Model):
         self.event_occurrence.save()
 
         # send email
-        info = 'Your reservation in {} with number {} for the day {} has been cancelled'
-        mailfrom = 'winecompanion19@gmail.com',
-        subject = 'Winecompanion'
-        body = info.format(self.event_occurrence.event.winery.name, self.id, self.event_occurrence.start)
-        Mail.send_mail(subject, body, mailfrom, [self.user.email])
-        success_message = 'The reservation has been cancelled'
-        return success_message
+        mailfrom = 'winecompanion19@gmail.com'
+        subject = 'Winecompanion Reservation Cancelled'
+        html_message = render_to_string(
+            'mail_template.html',
+            {
+                'first_name': self.user.first_name,
+                'winery': self.event_occurrence.event.winery.name,
+                'id': self.id,
+                'date': self.event_occurrence.start,
+            }
+        )
+        plain_message = strip_tags(html_message)
+        Mail.send_mail(subject, plain_message, mailfrom, [self.user.email], html_message=html_message)
+        return 'The reservation has been cancelled'
 
 
 class ImagesWinery(models.Model):
