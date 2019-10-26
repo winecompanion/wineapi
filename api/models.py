@@ -200,6 +200,12 @@ class Reservation(models.Model):
     def cancel(self):
         self.status = RESERVATION_CANCELLED
         self.save()
+
+        # update vacancies
+        self.event_occurrence.vacancies += self.attendee_number
+        self.event_occurrence.save()
+
+        # send email
         info = 'Your reservation in {} with number {} for the day {} has been cancelled'
         mailfrom = 'winecompanion19@gmail.com',
         subject = 'Winecompanion'
