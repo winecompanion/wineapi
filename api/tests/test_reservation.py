@@ -205,12 +205,18 @@ class TestReservation(TestCase):
         self.client.force_login(self.user)
         reservation = Reservation.objects.create(**self.valid_creation_data)
         self.assertEqual(reservation.status, RESERVATION_CONFIRMED)
+        old_vacancies = self.event_occ.vacancies
+
+        # cancel the reservation
         response = self.client.post(
             reverse('reservations-cancel-reservation', kwargs={'pk': reservation.id})
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         reservation.refresh_from_db()
         self.assertEqual(reservation.status, RESERVATION_CANCELLED)
+
+        self.event_occ.refresh_from_db()
+        self.assertEqual(self.event_occ.vacancies, old_vacancies + reservation.attendee_number)
 
     def test_cancel_event_cancels_reservations(self):
         self.client.force_login(self.user)
