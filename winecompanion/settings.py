@@ -80,7 +80,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],
+        'DIRS': ['templates', 'mail-templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
