@@ -39,6 +39,7 @@ urlpatterns = [
     path('api/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('languages/', LanguagesView.as_view(), name='languages'),
     path('genders/', GendersView.as_view(), name='genders'),
+    path('admin/', include('smuggler.urls')),
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
 ]
