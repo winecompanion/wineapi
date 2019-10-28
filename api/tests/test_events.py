@@ -49,7 +49,7 @@ class TestEvents(TestCase):
                 ],
                 "schedule": [
                     {
-                        "from_date": "2019-08-28",
+                        "from_date": "2030-08-28",
                         "to_date": None,
                         "start_time": "15:30:00",
                         "end_time": "16:30:00",
@@ -69,8 +69,8 @@ class TestEvents(TestCase):
                 ],
                 "schedule": [
                     {
-                        "from_date": "2019-08-28",
-                        "to_date": "2019-09-11",
+                        "from_date": "2030-08-28",
+                        "to_date": "2030-09-11",
                         "start_time": "15:30:00",
                         "end_time": "16:30:00",
                         "weekdays": [TUESDAY, WEDNESDAY, THURSDAY],
@@ -95,15 +95,15 @@ class TestEvents(TestCase):
                 ],
                 "schedule": [
                     {
-                        "from_date": "2019-08-28",
-                        "to_date": "2019-09-11",
+                        "from_date": "2030-08-28",
+                        "to_date": "2030-09-11",
                         "start_time": "8:30:00",
                         "end_time": "10:30:00",
                         "weekdays": [TUESDAY, THURSDAY, SATURDAY],
                     },
                     {
-                        "from_date": "2019-08-28",
-                        "to_date": "2019-09-11",
+                        "from_date": "2030-08-28",
+                        "to_date": "2030-09-11",
                         "start_time": "15:30:00",
                         "end_time": "16:30:00",
                         "weekdays": [TUESDAY, THURSDAY, SATURDAY],
@@ -119,6 +119,46 @@ class TestEvents(TestCase):
                 "vacancies": 50,
                 "schedule": [],
             },
+            "invalid_start_date": {
+                "name": "TEST_EVENT_NAME",
+                "description": "TEST_EVENT_DESCRIPTION",
+                "vacancies": 50,
+                "price": 500.0,
+                "categories": [
+                    {
+                        "name": self.category1.name
+                    },
+                ],
+                "schedule": [
+                    {
+                        "from_date": "2019-08-28",
+                        "to_date": None,
+                        "start_time": "15:30:00",
+                        "end_time": "16:30:00",
+                        "weekdays": None,
+                    }
+                ],
+            },
+            "start_greater_than_end": {
+                "name": "TEST_EVENT_NAME",
+                "description": "TEST_EVENT_DESCRIPTION",
+                "vacancies": 50,
+                "price": 500.0,
+                "categories": [
+                    {
+                        "name": self.category1.name
+                    },
+                ],
+                "schedule": [
+                    {
+                        "from_date": "2030-08-28",
+                        "to_date": "2030-08-27",
+                        "start_time": "15:30:00",
+                        "end_time": "16:30:00",
+                        "weekdays": None,
+                    }
+                ],
+            }
         }
 
         self.event_required_fields = ['name', 'description', 'price', 'categories', 'schedule', 'vacancies']
@@ -759,3 +799,21 @@ class TestEvents(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data.get('detail').code, 'permission_denied')
+
+    def test_event_invalid_schedule(self):
+        data = self.invalid_data['start_greater_than_end']
+        self.client.force_login(self.winery_user)
+        response = self.client.post(
+            reverse("event-list"), data=data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('End date must be greater than start date', response.json()['errors']['to_date'])
+
+    def test_event_start_date_is_in_the_past(self):
+        data = self.invalid_data['invalid_start_date']
+        self.client.force_login(self.winery_user)
+        response = self.client.post(
+            reverse("event-list"), data=data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Invalid start date', response.json()['errors']['from_date'])
