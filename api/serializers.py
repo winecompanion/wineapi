@@ -190,6 +190,17 @@ class EventSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('The vacancies must be greater than cero.')
         return vacancies
 
+    def validate(self, data):
+        schedules = data.get('schedule')
+        for schedule in schedules:
+            end_date = schedule.get('to_date')
+            start_date = schedule.get('from_date')
+            if not start_date or datetime.now() > datetime.combine(start_date, schedule.get('start_time')):
+                raise serializers.ValidationError({'from_date': 'Invalid start date'})
+            if end_date and start_date > end_date:
+                raise serializers.ValidationError({'to_date': 'End date must be greater than start date'})
+        return data
+
     def get_occurrences(self, event):
         occurrences = EventOccurrence.objects.filter(event=event, start__gt=datetime.now())
         serializer = VenueSerializer(instance=occurrences, many=True)

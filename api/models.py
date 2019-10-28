@@ -58,7 +58,11 @@ class Winery(models.Model):
         current_point = geos.fromstr(location)
         distance_from_point = {'km': ratio}
         distance = Distance(**distance_from_point)
-        wineries = Winery.objects.filter(location__distance_lt=(current_point, distance), location__isnull=False)
+        wineries = Winery.objects.filter(
+            location__distance_lt=(current_point, distance),
+            location__isnull=False,
+            available_since__isnull=False,
+        )
         return wineries
 
 
