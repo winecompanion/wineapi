@@ -26,6 +26,9 @@ class Country(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name_plural = "Countries"
+
 
 class Tag(models.Model):
     name = models.CharField(max_length=15)
@@ -103,6 +106,9 @@ class EventCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name_plural = "EventCategories"
 
 
 class Event(models.Model):

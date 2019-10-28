@@ -1,3 +1,11 @@
-# from django.contrib import admin
+from django.contrib import admin
 
-# Register your models here.
+from api.models import (
+    Country,
+    EventCategory,
+    Tag,
+)
+
+admin.site.register(Country)
+admin.site.register(EventCategory)
+admin.site.register(Tag)
