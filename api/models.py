@@ -253,3 +253,12 @@ class ImagesEvent(models.Model):
         related_name='images',
         on_delete=models.CASCADE
     )
+
+
+class ImagesWines(models.Model):
+    filefield = models.FileField(blank=False, null=False)
+    wine = models.ForeignKey(
+        Wine,
+        related_name='images',
+        on_delete=models.CASCADE
+    )

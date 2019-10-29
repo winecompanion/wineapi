@@ -222,10 +222,11 @@ class EventSerializer(serializers.ModelSerializer):
 class WineSerializer(serializers.ModelSerializer):
     """Serializes wines for the api endpoint"""
     id = serializers.ReadOnlyField()
+    images = ImageUrlField(read_only=True, many=True)
 
     class Meta:
         model = Wine
-        fields = ('id', 'name', 'description', 'varietal')
+        fields = ('id', 'name', 'description', 'varietal', 'images')
 
     def create(self, data, winery_pk, wineline_pk):
         data['wine_line_id'] = wineline_pk

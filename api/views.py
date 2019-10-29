@@ -44,6 +44,7 @@ from .models import (
     Winery,
     ImagesWinery,
     ImagesEvent,
+    ImagesWines,
 )
 from .serializers import (
     CountrySerializer,
@@ -404,6 +405,11 @@ class FileUploadView(APIView):
             model = ImagesEvent
             kwargs["event"] = get_object_or_404(
                 Event, pk=serializer.validated_data["id"]
+            )
+        elif serializer.validated_data["type"] == "wine":
+            model = ImagesWines
+            kwargs["wine"] = get_object_or_404(
+                Wine, pk=serializer.validated_data["id"]
             )
         else:
             return Response(
