@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'smuggler',
     'django_filters',
     'corsheaders',
     'rest_framework',
@@ -79,7 +80,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['mail-templates'],
+        'DIRS': ['templates', 'mail-templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
