@@ -111,7 +111,9 @@ class EventsView(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], name='cancel-event')
     def cancel_event(self, request, pk):
         event = get_object_or_404(Event, id=pk)
-        if getattr(request.user, 'winery', None) and request.user.winery.id != event.winery.id:
+        if event.cancelled:
+            return Response({'detail': 'Event already cancelled'}, status=status.HTTP_200_OK)
+        if not getattr(request.user, 'winery', None) or request.user.winery.id != event.winery.id:
             return Response({'detail': 'Access Denied'}, status=status.HTTP_403_FORBIDDEN)
         message = event.cancel()
         return Response({'detail': message}, status=status.HTTP_200_OK)
