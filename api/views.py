@@ -1,6 +1,9 @@
 from datetime import datetime
 
-from django.db.models import Count, F
+from django.db.models import (
+    Count,
+    F,
+)
 from django.db.models.functions import ExtractMonth
 from django_filters import (
     DateTimeFromToRangeFilter,
@@ -526,7 +529,9 @@ class ReportsView(APIView):
                 .order_by("count")[:10]
             ),
             "reservations_by_month": (
-                Reservation.objects.annotate(month=ExtractMonth("event_occurrence__start"))
+                Reservation.objects
+                .filter(event_occurrence__event__in=user_events)
+                .annotate(month=ExtractMonth("event_occurrence__start"))
                 .values("month")
                 .annotate(count=Count("id"))
                 .values("month", "count")
