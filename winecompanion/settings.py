@@ -30,13 +30,23 @@ ALLOWED_HOSTS = ['*']
 
 # Email settings definition
 SEND_EMAILS = False
-# Set EMAIL_HOST_USER with the email account
-# Set EMAIL_HOST_PASSWORD with the account's password
+
+#For synchronous shipping
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+#For asynchronous shipping
+#EMAIL_BACKEND = "mailer.backend.DbBackend"
+
+#See https://github.com/pinax/django-mailer; Don't forget to add (and modify) next two lines to crontab;
+#*       * * * * (/path/to/your/python /path/to/your/manage.py send_mail >> ~/cron_mail.log 2>&1)
+#0,20,40 * * * * (/path/to/your/python /path/to/your/manage.py retry_deferred >> ~/cron_mail_deferred.log 2>&1)
+
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
+# Set EMAIL_HOST_USER with the email account
 EMAIL_HOST_USER = ''
+# Set EMAIL_HOST_PASSWORD with the account's password
 EMAIL_HOST_PASSWORD = ''
 
 # Application definition
@@ -58,6 +68,7 @@ INSTALLED_APPS = [
     'rest_framework_swagger',
     'users',
     'api',
+    'mailer',
 ]
 
 MIDDLEWARE = [
