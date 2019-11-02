@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.conf import settings
 
 from . import LANGUAGES, GENDERS
 from .models import WineUser, UserSerializer
@@ -31,7 +32,7 @@ class WineUserView(viewsets.ModelViewSet):
         wine_user = serializer.create(serializer.validated_data)
 
         # send email
-        mailfrom = 'winecompanion19@gmail.com'
+        mailfrom = settings.EMAIL_HOST_USER
         subject = 'Bienvenido a Winecompanion'
         html_message = render_to_string(
             'user_registration_template.html',

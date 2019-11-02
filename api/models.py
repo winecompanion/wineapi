@@ -221,7 +221,7 @@ class Reservation(models.Model):
         self.event_occurrence.save()
 
         # send email
-        mailfrom = 'winecompanion19@gmail.com'
+        mailfrom = settings.EMAIL_HOST_USER
         subject = 'Winecompanion Reservation Cancelled'
         html_message = render_to_string(
             'mail_template.html',
