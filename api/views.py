@@ -100,6 +100,7 @@ class EventsView(viewsets.ModelViewSet):
     filterset_class = EventFilter
 
     permission_classes = [AllowWineryOwnerOrReadOnly & CreateOnlyIfWineryApproved]
+    http_method_names = ['get', 'post', 'patch', 'head', 'options', 'trace']
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -151,7 +152,7 @@ class WineryView(viewsets.ModelViewSet):
 
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     search_fields = ["name", "description"]
-    http_method_names = ["get", "head", "put", "patch"]
+    http_method_names = ['get', 'patch', 'head', 'options', 'trace']
 
     permission_classes = [AllowWineryOwnerOrReadOnly]
 
@@ -333,6 +334,7 @@ class ReservationView(viewsets.ModelViewSet):
     model_class = Reservation
 
     permission_classes = [IsAuthenticated & ListAdminOnly & AllowCreateButUpdateOwnerOnly]
+    http_method_names = ['get', 'post', 'head', 'options', 'trace']
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -462,6 +464,7 @@ class EventOccurrencesView(viewsets.ModelViewSet):
     model_class = EventOccurrence
 
     permission_classes = [AllowWineryOwnerOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'head', 'options', 'trace']
 
     def create(self, request, event_pk):
         serializer = self.get_serializer(data=request.data)
@@ -489,6 +492,7 @@ class EventOccurrencesView(viewsets.ModelViewSet):
 class RestaurantOccurrencesView(viewsets.ModelViewSet):
     serializer_class = EventOccurrenceSerializer
     model_class = EventOccurrence
+    http_method_names = ['get', 'post', 'patch', 'head', 'options', 'trace']
 
     def create(self, request, restaurant_pk):
         serializer = EventOccurrenceSerializer(data=request.data)
