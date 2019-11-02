@@ -77,7 +77,7 @@ class AllowWineryOwnerOrReadOnly(BasePermission):
     def has_object_permission(self, request, view, obj):
         obj_winery = None
         if isinstance(obj, Winery):
-            obj_winery = obj.id
+            obj_winery = obj
         else:
             obj_winery = getattr(obj, 'winery', None)
 
