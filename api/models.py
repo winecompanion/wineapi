@@ -145,11 +145,11 @@ class Event(models.Model):
                 dates.append(day)
         return dates
 
-    def cancel(self):
+    def cancel(self, reason=None):
         self.cancelled = datetime.now()
         occurrences = self.occurrences.filter(start__gt=date.today())
         for occurrence in occurrences:
-            occurrence.cancel()
+            occurrence.cancel(reason)
         self.save()
         success_message = 'The event has been cancelled'
         return success_message
@@ -218,7 +218,7 @@ class Reservation(models.Model):
     def __str__(self):
         return '{}: {}, {}'.format(str(self.id), self.user.first_name, str(self.paid_amount))
 
-    def cancel(self):
+    def cancel(self, reason=None):
         if self.status == RESERVATION_CANCELLED:
             return 'The reservation was already cancelled'
 
@@ -238,6 +238,7 @@ class Reservation(models.Model):
                 'winery': self.event_occurrence.event.winery.name,
                 'id': self.id,
                 'date': self.event_occurrence.start.strftime("%d/%m/%Y, %H:%M:%S"),
+                'reason': reason or '-',
             }
         )
         plain_message = strip_tags(html_message)

@@ -1,4 +1,5 @@
 from datetime import datetime
+from . import DEFAULT_CANCELLATION_REASON
 
 from django.db.models import (
     Count,
@@ -115,8 +116,14 @@ class EventsView(viewsets.ModelViewSet):
             return Response({'detail': 'Event already cancelled'}, status=status.HTTP_200_OK)
         if not getattr(request.user, 'winery', None) or request.user.winery.id != event.winery.id:
             return Response({'detail': 'Access Denied'}, status=status.HTTP_403_FORBIDDEN)
-        message = event.cancel()
-        return Response({'detail': message}, status=status.HTTP_200_OK)
+        try:
+            reason = request.data.get('reason', DEFAULT_CANCELLATION_REASON)
+            message = event.cancel(reason)
+            return Response({'detail': message}, status=status.HTTP_200_OK)
+        except Exception:
+            return Response(
+                {"errors": "Bad Request."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
     def get_queryset(self):
         all_events = Event.objects.filter(
@@ -347,8 +354,14 @@ class ReservationView(viewsets.ModelViewSet):
         reservation = get_object_or_404(Reservation, id=pk)
         if reservation.user.id != request.user.id:
             return Response({'detail': 'Permission Denied'}, status=status.HTTP_403_FORBIDDEN)
-        message = reservation.cancel()
-        return Response({'detail': message}, status=status.HTTP_200_OK)
+        try:
+            reason = request.data.get('reason', DEFAULT_CANCELLATION_REASON)
+            message = reservation.cancel(reason)
+            return Response({'detail': message}, status=status.HTTP_200_OK)
+        except Exception:
+            return Response(
+                {"errors": "Bad Request."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class VarietalsView(APIView):
