@@ -162,6 +162,7 @@ class TestEvents(TestCase):
         }
 
         self.event_required_fields = ['name', 'description', 'price', 'categories', 'schedule', 'vacancies']
+        self.cancel_reason = {'reason': 'ExampleReason'}
         self.client = Client()
 
     def test_dates_between_threshold(self):
@@ -784,7 +785,7 @@ class TestEvents(TestCase):
         self.client.force_login(self.winery_user)
         event = Event.objects.create(name='Test Event', description='Desc 1', winery=self.winery, price=0.0)
         res = self.client.post(
-            reverse('event-cancel-event', kwargs={'pk': event.id})
+                reverse('event-cancel-event', kwargs={'pk': event.id}), self.cancel_reason
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         event.refresh_from_db()

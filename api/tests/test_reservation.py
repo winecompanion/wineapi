@@ -61,6 +61,7 @@ class TestReservation(TestCase):
                 'observations': 'observations',
         }
         self.required_fields = set(['attendee_number', 'paid_amount', 'event_occurrence'])
+        self.cancellation_reason = {'reason': 'exampleReason'}
         self.client = Client()
 
     def test_reservation_creation(self):
@@ -209,7 +210,7 @@ class TestReservation(TestCase):
 
         # cancel the reservation
         response = self.client.post(
-            reverse('reservations-cancel-reservation', kwargs={'pk': reservation.id})
+            reverse('reservations-cancel-reservation', kwargs={'pk': reservation.id}), self.cancellation_reason
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         reservation.refresh_from_db()
@@ -232,7 +233,7 @@ class TestReservation(TestCase):
         old_reservation = Reservation.objects.create(**self.valid_creation_data)
 
         self.client.post(
-            reverse('event-cancel-event', kwargs={'pk': self.event.id})
+            reverse('event-cancel-event', kwargs={'pk': self.event.id}), self.cancellation_reason
         )
         reservation.refresh_from_db()
         self.assertEqual(reservation.status, RESERVATION_CANCELLED)
