@@ -4,6 +4,8 @@ from winecompanion import settings
 from django.db.models import Avg
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from rest_framework.exceptions import ParseError
 from rest_framework import serializers
@@ -19,6 +21,7 @@ from .models import (
     Tag,
     Rate,
     Reservation,
+    Mail,
 )
 
 
@@ -277,25 +280,15 @@ class WinerySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'description', 'website', 'wine_lines', 'location', 'images')
 
 
-class EventBriefSerializer(serializers.ModelSerializer):
-    """Serializer for event with rediced infromation only for reading purposes"""
-    id = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField()
-    winery = serializers.SlugRelatedField(slug_field='name', read_only=True)
-
-    class Meta:
-        model = Event
-        fields = ('id', 'name', 'winery')
-
-
 class EventOccurrenceSerializer(serializers.ModelSerializer):
     """Serializer for event occurrences """
     id = serializers.ReadOnlyField()
-    event = EventBriefSerializer(read_only=True)
+    cancelled = serializers.ReadOnlyField()
+    event = serializers.SlugRelatedField(read_only=True, slug_field='name')
 
     class Meta:
         model = EventOccurrence
-        fields = ('id', 'start', 'end', 'vacancies', 'event')
+        fields = ('id', 'start', 'end', 'cancelled', 'vacancies', 'event')
 
     def create(self, data, event_pk):
         event = Event.objects.filter(pk=event_pk).first()
@@ -308,9 +301,37 @@ class EventOccurrenceSerializer(serializers.ModelSerializer):
         occurrence = EventOccurrence.objects.create(**data)
         return occurrence
 
+    def update(self, instance, validated_data):
+        start = validated_data.get('start')
+        end = validated_data.get('end')
+        instance.start = start or instance.start
+        instance.end = end or instance.end
+        instance.vacancies = validated_data.get('vacancies', instance.vacancies)
+        instance.save()
+        if start or end:
+            for reservation in instance.reservation_set.all():
+                # send email
+                subject = 'Winecompanion Reservation Date Modified'
+                html_message = render_to_string(
+                    'reservation_edited_template.html',
+                    {
+                        'first_name': reservation.user.first_name,
+                        'winery': instance.event.winery.name,
+                        'id': instance.id,
+                        'date': instance.start.strftime("%d/%m/%Y"),
+                        'start': instance.start.time,
+                        'end': instance.end.time,
+                    }
+                )
+                plain_message = strip_tags(html_message)
+                Mail.send_mail(subject, plain_message, [reservation.user.email], html_message=html_message)
+        return instance
+
     def validate(self, data):
+        if data['start'] < datetime.now():
+            raise serializers.ValidationError({'start': ['Invalid start date']})
         if data['start'] >= data['end']:
-            raise serializers.ValidationError({'end': ['end date must be greater than start date']})
+            raise serializers.ValidationError({'end': ['End date must be greater than start date']})
         return data
 
 
@@ -319,6 +340,8 @@ class ReservationSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     created_on = serializers.ReadOnlyField()
     user = serializers.SlugRelatedField(read_only=True, slug_field='email')
+    user_first_name = serializers.SlugRelatedField(source='user', read_only=True, slug_field='first_name')
+    user_last_name = serializers.SlugRelatedField(source='user', read_only=True, slug_field='last_name')
 
     class Meta:
         model = Reservation
@@ -329,6 +352,8 @@ class ReservationSerializer(serializers.ModelSerializer):
             'created_on',
             'paid_amount',
             'user',
+            'user_first_name',
+            'user_last_name',
             'event_occurrence',
         )
 
@@ -357,6 +382,8 @@ class ReservationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('The date is no longer available')
         if data['event_occurrence'].event.cancelled:
             raise serializers.ValidationError('The event is cancelled')
+        if data['event_occurrence'].cancelled:
+            raise serializers.ValidationError('This venue is no longer available')
 
         return data
 

@@ -15,7 +15,8 @@ from . import RESERVATION_STATUS, RESERVATION_CANCELLED, RESERVATION_CONFIRMED, 
 
 class Mail():
     @staticmethod
-    def send_mail(subject, message, mailfrom, mailto, html_message=None, fail_silently=False):
+    def send_mail(subject, message, mailto, html_message=None, fail_silently=False):
+        mailfrom = settings.EMAIL_HOST_USER
         if settings.SEND_EMAILS:
             send_mail(subject, message, mailfrom, mailto, html_message=html_message, fail_silently=fail_silently)
 
@@ -148,9 +149,7 @@ class Event(models.Model):
         self.cancelled = datetime.now()
         occurrences = self.occurrences.filter(start__gt=date.today())
         for occurrence in occurrences:
-            reservations = occurrence.reservation_set.all()
-            for reservation in reservations:
-                reservation.cancel()
+            occurrence.cancel()
         self.save()
         success_message = 'The event has been cancelled'
         return success_message
@@ -162,12 +161,22 @@ class Event(models.Model):
 class EventOccurrence(models.Model):
     start = models.DateTimeField()
     end = models.DateTimeField()
+    cancelled = models.DateTimeField(null=True, blank=True)
     vacancies = models.PositiveIntegerField()
     event = models.ForeignKey(
         Event,
         related_name='occurrences',
         on_delete=models.CASCADE
     )
+
+    def cancel(self):
+        self.cancelled = datetime.now()
+        reservations = self.reservation_set.all()
+        for reservation in reservations:
+            reservation.cancel()
+        self.save()
+        success_message = 'The Occurrence has been cancelled'
+        return success_message
 
 
 class Rate(models.Model):
@@ -221,7 +230,6 @@ class Reservation(models.Model):
         self.event_occurrence.save()
 
         # send email
-        mailfrom = 'winecompanion19@gmail.com'
         subject = 'Winecompanion Reservation Cancelled'
         html_message = render_to_string(
             'mail_template.html',
@@ -229,11 +237,11 @@ class Reservation(models.Model):
                 'first_name': self.user.first_name,
                 'winery': self.event_occurrence.event.winery.name,
                 'id': self.id,
-                'date': self.event_occurrence.start,
+                'date': self.event_occurrence.start.strftime("%d/%m/%Y, %H:%M:%S"),
             }
         )
         plain_message = strip_tags(html_message)
-        Mail.send_mail(subject, plain_message, mailfrom, [self.user.email], html_message=html_message)
+        Mail.send_mail(subject, plain_message, [self.user.email], html_message=html_message)
         return 'The reservation has been cancelled'
 
 

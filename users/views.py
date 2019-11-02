@@ -31,13 +31,12 @@ class WineUserView(viewsets.ModelViewSet):
         wine_user = serializer.create(serializer.validated_data)
 
         # send email
-        mailfrom = 'winecompanion19@gmail.com'
         subject = 'Bienvenido a Winecompanion'
         html_message = render_to_string(
             'user_registration_template.html',
         )
         plain_message = strip_tags(html_message)
-        Mail.send_mail(subject, plain_message, mailfrom, [wine_user.email], html_message=html_message)
+        Mail.send_mail(subject, plain_message, [wine_user.email], html_message=html_message)
 
         return Response({'url': reverse('users-detail', args=[wine_user.id])}, status=status.HTTP_201_CREATED)
 

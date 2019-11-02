@@ -29,7 +29,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 # Email settings definition
-SEND_EMAILS = False
+SEND_EMAILS = True
 # Set EMAIL_HOST_USER with the email account
 # Set EMAIL_HOST_PASSWORD with the account's password
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
