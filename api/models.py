@@ -169,11 +169,11 @@ class EventOccurrence(models.Model):
         on_delete=models.CASCADE
     )
 
-    def cancel(self):
+    def cancel(self, reason=None):
         self.cancelled = datetime.now()
         reservations = self.reservation_set.all()
         for reservation in reservations:
-            reservation.cancel()
+            reservation.cancel(reason)
         self.save()
         success_message = 'The Occurrence has been cancelled'
         return success_message
