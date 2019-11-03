@@ -1,9 +1,17 @@
-from datetime import datetime
+from datetime import (
+    date,
+    datetime,
+)
+from dateutil.relativedelta import relativedelta
 from . import DEFAULT_CANCELLATION_REASON
 
 from django.db.models import (
+    Case,
     Count,
+    IntegerField,
     F,
+    Sum,
+    When,
 )
 from django.db.models.functions import ExtractMonth
 from django_filters import (
@@ -531,19 +539,22 @@ class WineryApprovalView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
 class ReportsView(APIView):
     def get(self, request, *args, **kwargs):
         user_events = request.user.winery.events.all()
+        user_events_reservations = Reservation.objects.filter(event_occurrence__event__in=user_events)
+        today = date.today()
+        age_18_birth_year = (today - relativedelta(years=18)).year
+        age_35_birth_year = (today - relativedelta(years=35)).year
+        age_50_birth_year = (today - relativedelta(years=50)).year
         response = {
             "reservations_by_event": (
-                Reservation.objects
+                user_events_reservations
                 .values("event_occurrence__event__name")
                 .annotate(name=F("event_occurrence__event__name"))
                 .annotate(count=Count("id"))
                 .values("name", "count")
-                .filter(event_occurrence__event__in=user_events)
                 .order_by("count")[:10]
             ),
             "reservations_by_month": (
-                Reservation.objects
-                .filter(event_occurrence__event__in=user_events)
+                user_events_reservations
                 .annotate(month=ExtractMonth("event_occurrence__start"))
                 .values("month")
                 .annotate(count=Count("id"))
@@ -551,14 +562,42 @@ class ReportsView(APIView):
                 .order_by("month")
             ),
             "attendees_languages": (
-                Reservation.objects
-                .filter(event_occurrence__event__in=user_events)
+                user_events_reservations
                 .values("user__language")
                 .annotate(language=F("user__language"))
                 .annotate(count=Count("id"))
                 .values("language", "count")
-                .filter(event_occurrence__event__in=user_events)
             ),
+            "attendees_countries": (
+                user_events_reservations
+                .values("user__country__name")
+                .annotate(country=F("user__country__name"))
+                .annotate(count=Count("id"))
+                .values("country", "count")
+            ),
+            "attendees_age_groups": (
+                user_events_reservations
+                .annotate(young=Case(
+                    When(user__birth_date__year__range=(age_35_birth_year, age_18_birth_year), then=1),
+                    default=0,
+                    output_field=IntegerField())
+                )
+                .annotate(midage=Case(
+                    When(user__birth_date__year__range=(age_50_birth_year, age_35_birth_year - 1), then=1),
+                    default=0,
+                    output_field=IntegerField())
+                )
+                .annotate(old=Case(
+                    When(user__birth_date__year__lt=age_50_birth_year, then=1),
+                    default=0,
+                    output_field=IntegerField())
+                )
+                .aggregate(
+                    young_sum=Sum('young'),
+                    midage_sum=Sum('midage'),
+                    old_sum=Sum('old')
+                )
+            )
         }
 
         # Awful hack to return months with count = 0
@@ -570,5 +609,8 @@ class ReportsView(APIView):
             zero_count_months[elem['month'] - 1].update(elem)
 
         response['reservations_by_month'] = zero_count_months
+        response['attendees_age_groups'] = [
+            {"group": k.split("_")[0], "count": v} for k, v in response['attendees_age_groups'].items()
+        ]
 
         return Response(response)
