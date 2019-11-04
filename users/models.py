@@ -92,6 +92,7 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializes a user for the api endpoint"""
     id = serializers.ReadOnlyField()
     winery = WinerySerializer(required=False)
+    user_type = serializers.ReadOnlyField()
 
     class Meta:
         model = get_user_model()
@@ -126,6 +127,11 @@ class UserSerializer(serializers.ModelSerializer):
             user.user_type = WINERY
         user.save()
         return user
+
+    def validate_winery(self, winery):
+        if self.instance:
+            raise serializers.ValidationError({'winery': 'Winery can only be specified on creation'})
+        return winery
 
     def to_representation(self, obj):
         self.fields['gender'] = serializers.CharField(source='get_gender_display')

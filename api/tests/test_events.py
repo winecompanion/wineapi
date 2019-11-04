@@ -808,7 +808,7 @@ class TestEvents(TestCase):
             reverse("event-list"), data=data, content_type="application/json"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('End date must be greater than start date', response.json()['errors']['to_date'])
+        self.assertIn('End date must be greater than start date', response.data['errors']['schedule']['to_date'])
 
     def test_event_start_date_is_in_the_past(self):
         data = self.invalid_data['invalid_start_date']
@@ -817,4 +817,4 @@ class TestEvents(TestCase):
             reverse("event-list"), data=data, content_type="application/json"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('Invalid start date', response.json()['errors']['from_date'])
+        self.assertIn('Invalid start date', response.data['errors']['schedule']['from_date'])
