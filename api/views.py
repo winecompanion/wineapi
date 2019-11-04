@@ -29,6 +29,7 @@ from users.permissions import (
     AdminOnly,
     AdminOrReadOnly,
     AllowCreateButUpdateOwnerOnly,
+    AllowEventOwnerOrReadOnly,
     AllowWineryOwnerOrReadOnly,
     CreateOnlyIfWineryApproved,
     IsOwnerOrReadOnly,
@@ -84,11 +85,6 @@ class EventFilter(FilterSet):
 
 
 class EventsView(viewsets.ModelViewSet):
-    queryset = (
-        Event.objects.filter(occurrences__start__gt=datetime.now())
-        .exclude(categories__name__icontains="restaurant")
-        .distinct()
-    )
 
     serializer_class = EventSerializer
 
@@ -132,6 +128,7 @@ class EventsView(viewsets.ModelViewSet):
     def get_queryset(self):
         all_events = Event.objects.filter(
             occurrences__start__gt=datetime.now(),
+            occurrences__cancelled__isnull=True,
             cancelled__isnull=True,
         ).exclude(categories__name__icontains='restaurant').distinct()
 
@@ -442,6 +439,7 @@ class RestaurantsView(EventsView):
     def get_queryset(self):
         all_restaurants = Event.objects.filter(
             occurrences__start__gt=datetime.now(),
+            occurrences__cancelled__isnull=True,
             categories__name__icontains='restaurant',
             cancelled__isnull=True,
         ).distinct()
@@ -461,7 +459,7 @@ class EventOccurrencesView(viewsets.ModelViewSet):
     serializer_class = EventOccurrenceSerializer
     model_class = EventOccurrence
 
-    permission_classes = [AllowWineryOwnerOrReadOnly]
+    permission_classes = [AllowEventOwnerOrReadOnly]
 
     def create(self, request, event_pk):
         serializer = self.get_serializer(data=request.data)
@@ -483,7 +481,29 @@ class EventOccurrencesView(viewsets.ModelViewSet):
 
     def get_queryset(self):
         event = get_object_or_404(Event, id=self.kwargs["event_pk"])
-        return EventOccurrence.objects.filter(event=event.id)
+        occurrences = EventOccurrence.objects.filter(
+            event=event.id,
+            cancelled__isnull=True,
+        )
+        cancelled_occurrences = None
+        user_winery = getattr(self.request.user, 'winery', None)
+        if user_winery and user_winery == event.winery:
+            cancelled_occurrences = EventOccurrence.objects.filter(
+                event=event.id,
+                cancelled__isnull=False,
+            )
+        queryset = occurrences if not cancelled_occurrences else occurrences | cancelled_occurrences
+        return queryset.order_by('id')
+
+    @action(detail=True, methods=['post'], name='cancel-occurrence')
+    def cancel_occurrence(self, request, event_pk, pk):
+        occurrence = get_object_or_404(EventOccurrence, id=pk)
+        if occurrence.cancelled:
+            return Response({'detail': 'Occurrence already cancelled'}, status=status.HTTP_200_OK)
+        if not getattr(request.user, 'winery', None) or request.user.winery.id != occurrence.event.winery.id:
+            return Response({'detail': 'Access Denied'}, status=status.HTTP_403_FORBIDDEN)
+        message = occurrence.cancel()
+        return Response({'detail': message}, status=status.HTTP_200_OK)
 
 
 class RestaurantOccurrencesView(viewsets.ModelViewSet):
@@ -572,3 +592,29 @@ class ReportsView(APIView):
         response['reservations_by_month'] = zero_count_months
 
         return Response(response)
+
+
+class EventReservationsView(RetrieveModelMixin,
+                            ListModelMixin,
+                            GenericViewSet):
+
+    serializer_class = ReservationSerializer
+    model_class = Reservation
+
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        occurrence = get_object_or_404(
+            EventOccurrence,
+            id=self.kwargs["occurrence_pk"],
+            event__winery=self.request.user.winery,
+        )
+        return Reservation.objects.filter(event_occurrence=occurrence.id)
+
+    @action(detail=True, methods=['post'], name='cancel-reservation')
+    def cancel_reservation(self, request, event_pk, occurrence_pk, pk):
+        reservation = get_object_or_404(Reservation, id=pk)
+        if reservation.event_occurrence.event.winery != request.user.winery:
+            return Response({'detail': 'Permission Denied'}, status=status.HTTP_403_FORBIDDEN)
+        message = reservation.cancel()
+        return Response({'detail': message}, status=status.HTTP_200_OK)

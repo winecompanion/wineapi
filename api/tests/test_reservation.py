@@ -133,6 +133,20 @@ class TestReservation(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors['non_field_errors']), set(['The event is cancelled']))
 
+    def test_invalid_reservation_occurrence_cancelled(self):
+        occurrence = EventOccurrence.objects.create(
+            start='2030-10-31T20:00:00',
+            end='2030-10-31T23:00:00',
+            cancelled=datetime.now(),
+            vacancies=50,
+            event=self.event,
+        )
+        test_data = self.valid_reservation_json_data
+        test_data['event_occurrence'] = occurrence.id
+        serializer = ReservationSerializer(data=test_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors['non_field_errors']), set(['This venue is no longer available']))
+
     def test_reservation_endpoint_get(self):
         self.country = Country.objects.create(name='Argentina')
         admin_user = WineUser.objects.create_user(

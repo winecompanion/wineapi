@@ -21,7 +21,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY','3ivzfd-g&2!w)^*o7msnk#tn6=#sp_ov^kchg1x=jep-!8+96g')
+SECRET_KEY = os.getenv('SECRET_KEY', '3ivzfd-g&2!w)^*o7msnk#tn6=#sp_ov^kchg1x=jep-!8+96g')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -29,15 +29,15 @@ ALLOWED_HOSTS = ['*']
 
 # Email settings definition
 SEND_EMAILS = os.getenv('SEND_EMAILS', False)
-#For synchronous shipping
+# For synchronous shipping
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-#For asynchronous shipping
-#EMAIL_BACKEND = "mailer.backend.DbBackend"
+# For asynchronous shipping
+# EMAIL_BACKEND = "mailer.backend.DbBackend"
 
-#See https://github.com/pinax/django-mailer; Don't forget to add (and modify) next two lines to crontab;
-#*       * * * * (/path/to/your/python /path/to/your/manage.py send_mail >> ~/cron_mail.log 2>&1)
-#0,20,40 * * * * (/path/to/your/python /path/to/your/manage.py retry_deferred >> ~/cron_mail_deferred.log 2>&1)
+# See https://github.com/pinax/django-mailer; Don't forget to add (and modify) next two lines to crontab;
+# *       * * * * (/path/to/your/python /path/to/your/manage.py send_mail >> ~/cron_mail.log 2>&1)
+# 0,20,40 * * * * (/path/to/your/python /path/to/your/manage.py retry_deferred >> ~/cron_mail_deferred.log 2>&1)
 
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
