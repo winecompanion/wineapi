@@ -125,3 +125,22 @@ class CreateOnlyIfWineryApproved(BasePermission):
 
     def has_permission(self, request, view):
         return view.action != 'create' or request.user.winery.available_since
+
+
+class AllowEventOwnerOrReadOnly(BasePermission):
+    """
+    Custom permission:
+        - allow create and update only for winery owner.
+        - allow anonimous GET
+    """
+
+    def has_permission(self, request, view):
+        return view.action not in NOT_SAFE_ACTIONS or request.user.is_authenticated and request.user.winery
+
+    def has_object_permission(self, request, view, obj):
+
+        return (
+            view.action in SAFE_ACTIONS
+            or request.user.winery and obj.event.winery == request.user.winery
+            or request.user.is_staff
+        )
