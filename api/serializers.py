@@ -301,11 +301,22 @@ class WinerySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'description', 'website', 'wine_lines', 'location', 'images')
 
 
+class EventBriefSerializer(serializers.ModelSerializer):
+    """Serializer for event with rediced infromation only for reading purposes"""
+    id = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField()
+    winery = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = Event
+        fields = ('id', 'name', 'winery')
+
+
 class EventOccurrenceSerializer(serializers.ModelSerializer):
     """Serializer for event occurrences """
     id = serializers.ReadOnlyField()
     cancelled = serializers.ReadOnlyField()
-    event = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    event = EventBriefSerializer(read_only=True)
 
     class Meta:
         model = EventOccurrence
