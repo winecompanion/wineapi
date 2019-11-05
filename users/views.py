@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.shortcuts import get_object_or_404
 
 from . import LANGUAGES, GENDERS
 from .models import WineUser, UserSerializer
@@ -47,6 +48,19 @@ class WineUserView(viewsets.ModelViewSet):
         res = Reservation.objects.filter(user=request.user.id).order_by('-id')
         reservations = ReservationSerializer(res, many=True)
         return Response(reservations.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], name='set-password')
+    def set_password(self, request, pk):
+        user = get_object_or_404(WineUser, id=pk)
+        if user != request.user:
+            return Response({'detail': 'Permission Denied'}, status=status.HTTP_403_FORBIDDEN)
+        password = request.data.get('password')
+        if password:
+            user.set_password(password)
+            user.save()
+            return Response({'detail': 'Password updated successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'errors': 'Password not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LanguagesView(APIView):
