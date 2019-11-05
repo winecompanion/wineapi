@@ -46,6 +46,8 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 # Set EMAIL_HOST_PASSWORD with the account's password
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+#Necessary to send reset link properly, among other features. Example 'http://10.10.10.10:1000' (without last slash)
+URL_FRONT_END=os.getenv('URL_FRONT_END', 'http://winecompanion.com')
 
 # Application definition
 
@@ -64,6 +66,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework_gis',
     'rest_framework_swagger',
+    'django_rest_passwordreset',
     'users',
     'api',
     'mailer',
