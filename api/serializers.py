@@ -229,6 +229,11 @@ class EventSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'to_date': 'End date must be greater than start date'})
         return schedules
 
+    def validate(self, data):
+        if data.get('schedule') and not data.get('vacancies'):
+            raise serializers.ValidationError({'vacancies': 'Vacancies must be specified'})
+        return data
+
     def get_occurrences(self, event):
         occurrences = EventOccurrence.objects.filter(event=event, start__gt=datetime.now())
         serializer = VenueSerializer(instance=occurrences, many=True)
