@@ -135,21 +135,8 @@ class EventSerializer(serializers.ModelSerializer):
                     elem['weekdays'])
 
             for date in dates:
-                start = datetime(
-                    date.year,
-                    date.month,
-                    date.day,
-                    start_time.hour,
-                    start_time.minute,
-                )
-                end = datetime(
-                    date.year,
-                    date.month,
-                    date.day,
-                    end_time.hour,
-                    end_time.minute,
-                )
-
+                start = datetime.combine(date, start_time)
+                end = datetime.combine(date, end_time)
                 EventOccurrence.objects.create(
                     start=start,
                     end=end,
@@ -170,6 +157,26 @@ class EventSerializer(serializers.ModelSerializer):
         instance.description = validated_data.get('description', instance.description)
         instance.price = validated_data.get('price', instance.price)
 
+        vacancies = validated_data.get('vacancies')
+        if vacancies:
+            for elem in validated_data.get('schedule'):
+                start_time = elem['start_time']
+                end_time = elem['end_time']
+                dates = Event.calculate_dates_in_threshold(
+                        elem['from_date'],
+                        elem['to_date'],
+                        elem['weekdays'])
+
+                for date in dates:
+                    start = datetime.combine(date, start_time)
+                    end = datetime.combine(date, end_time)
+                    EventOccurrence.objects.create(
+                        start=start,
+                        end=end,
+                        vacancies=vacancies,
+                        event=instance
+                    )
+
         categories = validated_data.get('categories', instance.categories.all())
         instance.categories.clear()
         for category in categories:
@@ -179,6 +186,7 @@ class EventSerializer(serializers.ModelSerializer):
         instance.tags.clear()
         for tag in tags:
             instance.tags.add(get_object_or_404(Tag, name=tag['name']))
+
         instance.save()
         return instance
 
@@ -207,15 +215,11 @@ class EventSerializer(serializers.ModelSerializer):
         return tags
 
     def validate_vacancies(self, vacancies):
-        if self.instance:
-            raise serializers.ValidationError({'vacancies': 'Vacancies only can be specified in creation'})
         if vacancies <= 0:
             raise serializers.ValidationError('The vacancies must be greater than cero.')
         return vacancies
 
     def validate_schedule(self, schedules):
-        if self.instance:
-            raise serializers.ValidationError({'schedule': 'Schudule only can be used in creation'})
         for schedule in schedules:
             end_date = schedule.get('to_date')
             start_date = schedule.get('from_date')
@@ -224,6 +228,11 @@ class EventSerializer(serializers.ModelSerializer):
             if end_date and start_date > end_date:
                 raise serializers.ValidationError({'to_date': 'End date must be greater than start date'})
         return schedules
+
+    def validate(self, data):
+        if data.get('schedule') and not data.get('vacancies'):
+            raise serializers.ValidationError({'vacancies': 'Vacancies must be specified'})
+        return data
 
     def get_occurrences(self, event):
         occurrences = EventOccurrence.objects.filter(event=event, start__gt=datetime.now())
