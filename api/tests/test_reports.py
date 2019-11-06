@@ -48,6 +48,7 @@ class TestReports(TestCase):
             password='testuserpass',
             first_name='First Name',
             last_name='Last Name',
+            birth_date='1950-03-02',
             gender=GENDER_MALE,
             language=LANGUAGE_SPANISH,
             phone='2616489178',
@@ -58,6 +59,7 @@ class TestReports(TestCase):
             password='testuserpass',
             first_name='First Name',
             last_name='Last Name',
+            birth_date='2000-03-02',
             gender=GENDER_FEMALE,
             language=LANGUAGE_FRENCH,
             phone='2616489178',
@@ -183,8 +185,30 @@ class TestReports(TestCase):
                 'count': 1,
             },
         ]
+        expected_attendees_countries = [
+            {
+                'country': 'Argentina',
+                'count': 3,
+            },
+        ]
+        expected_attendees_age_groups = [
+            {
+                'group': 'young',
+                'count': 2,
+            },
+            {
+                'group': 'midage',
+                'count': 0,
+            },
+            {
+                'group': 'old',
+                'count': 1,
+            },
+        ]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(list(response.data['reservations_by_event']), expected_reservations_by_event)
         self.assertEqual(list(response.data['reservations_by_month']), expected_reservations_by_month)
         self.assertEqual(list(response.data['attendees_languages']), expected_attendees_languages)
+        self.assertEqual(list(response.data['attendees_countries']), expected_attendees_countries)
+        self.assertEqual(list(response.data['attendees_age_groups']), expected_attendees_age_groups)
