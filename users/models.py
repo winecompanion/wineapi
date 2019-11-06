@@ -128,6 +128,18 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+    def update(self, instance, validated_data):
+        """User update method"""
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.birth_date = validated_data.get('birth_date', instance.birth_date)
+        instance.gender = validated_data.get('gender', instance.gender)
+        instance.country = validated_data.get('country', instance.country)
+        instance.language = validated_data.get('language', instance.language)
+        instance.phone = validated_data.get('phone', instance.phone)
+        instance.save()
+        return instance
+
     def validate_winery(self, winery):
         if self.instance:
             raise serializers.ValidationError({'winery': 'Winery can only be specified on creation'})
