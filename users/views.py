@@ -1,12 +1,16 @@
+from django.conf import settings
+from django.dispatch import receiver
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.shortcuts import get_object_or_404
+from django_rest_passwordreset.signals import reset_password_token_created
 
 from . import LANGUAGES, GENDERS
 from .models import WineUser, UserSerializer
@@ -17,6 +21,23 @@ from .permissions import (
     AllowCreateUserButUpdateOwnerOnly,
     ListAdminOnly,
 )
+
+
+@receiver(reset_password_token_created)
+def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
+    # send email
+    token = reset_password_token.key
+    url = settings.URL_FRONT_END
+    subject = 'Winecompanion - Password Assistance'
+    html_message = render_to_string(
+            'reset_password_template.html',
+            {
+                'user': reset_password_token.user.first_name,
+                'url': "{}{}confirm/{}".format(url, reverse('password_reset:reset-password-request'), token),
+            }
+        )
+    plain_message = strip_tags(html_message)
+    Mail.send_mail(subject, plain_message, [reset_password_token.user.email], html_message=html_message)
 
 
 class WineUserView(viewsets.ModelViewSet):

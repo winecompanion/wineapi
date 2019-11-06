@@ -37,6 +37,7 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('api/token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/reset-password/', include('django_rest_passwordreset.urls', namespace='password_reset')),
     path('languages/', LanguagesView.as_view(), name='languages'),
     path('genders/', GendersView.as_view(), name='genders'),
     path('admin/', include('smuggler.urls')),
