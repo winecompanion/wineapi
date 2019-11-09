@@ -369,9 +369,11 @@ class EventOccurrenceSerializer(serializers.ModelSerializer):
         return instance
 
     def validate(self, data):
-        if data['start'] < datetime.now():
-            raise serializers.ValidationError({'start': ['Invalid start date']})
-        if data['start'] >= data['end']:
+        start = data.get('start') or getattr(self.instance, 'start', None)
+        if start and start < datetime.now():
+            raise serializers.ValidationError({'start': ['Start datetime cannot be in the past']})
+        end = data.get('end') or getattr(self.instance, 'end', None)
+        if start and end and start >= end:
             raise serializers.ValidationError({'end': ['End date must be greater than start date']})
         return data
 
