@@ -20,4 +20,4 @@ RESERVATION_STATUS = [
     (RESERVATION_PAIDOUT, 'Paid Out'),
 ]
 
-DEFAULT_CANCELLATION_REASON = 'El evento se cancela por motivos de fuerza mayor'
+DEFAULT_CANCELLATION_REASON = 'No especificado'

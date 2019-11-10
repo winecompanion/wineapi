@@ -10,7 +10,13 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
-from . import RESERVATION_STATUS, RESERVATION_CANCELLED, RESERVATION_CONFIRMED, VARIETALS
+from . import (
+    DEFAULT_CANCELLATION_REASON,
+    RESERVATION_STATUS,
+    RESERVATION_CANCELLED,
+    RESERVATION_CONFIRMED,
+    VARIETALS
+)
 
 
 class Mail():
@@ -238,7 +244,7 @@ class Reservation(models.Model):
                 'winery': self.event_occurrence.event.winery.name,
                 'id': self.id,
                 'date': self.event_occurrence.start.strftime("%d/%m/%Y, %H:%M:%S"),
-                'reason': reason or '-',
+                'reason': reason or DEFAULT_CANCELLATION_REASON,
             }
         )
         plain_message = strip_tags(html_message)
