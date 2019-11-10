@@ -3,7 +3,6 @@ from datetime import (
     datetime,
 )
 from dateutil.relativedelta import relativedelta
-from . import DEFAULT_CANCELLATION_REASON
 
 from django.db.models import (
     Case,
@@ -32,7 +31,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
-from . import VARIETALS
+from . import (
+    DEFAULT_CANCELLATION_REASON,
+    VARIETALS,
+)
 from users.permissions import (
     AdminOnly,
     AdminOrReadOnly,
@@ -513,7 +515,8 @@ class EventOccurrencesView(viewsets.ModelViewSet):
             return Response({'detail': 'Occurrence already cancelled'}, status=status.HTTP_200_OK)
         if not getattr(request.user, 'winery', None) or request.user.winery.id != occurrence.event.winery.id:
             return Response({'detail': 'Access Denied'}, status=status.HTTP_403_FORBIDDEN)
-        message = occurrence.cancel()
+        reason = request.data.get('reason')
+        message = occurrence.cancel(reason)
         return Response({'detail': message}, status=status.HTTP_200_OK)
 
 
@@ -662,5 +665,6 @@ class EventReservationsView(RetrieveModelMixin,
         reservation = get_object_or_404(Reservation, id=pk)
         if reservation.event_occurrence.event.winery != request.user.winery:
             return Response({'detail': 'Permission Denied'}, status=status.HTTP_403_FORBIDDEN)
-        message = reservation.cancel()
+        reason = request.data.get('reason')
+        message = reservation.cancel(reason)
         return Response({'detail': message}, status=status.HTTP_200_OK)
