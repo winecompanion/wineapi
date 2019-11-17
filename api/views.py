@@ -565,8 +565,23 @@ class WineryApprovalView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
 
 class ReportsView(APIView):
     def get(self, request, *args, **kwargs):
+        DATE_FORMAT = "%Y-%m-%d"
         user_events = request.user.winery.events.all()
         user_events_reservations = Reservation.objects.filter(event_occurrence__event__in=user_events)
+        from_date = request.query_params.get('from_date')
+        to_date = request.query_params.get('to_date')
+        try:
+            if from_date:
+                from_date = datetime.strptime(from_date, DATE_FORMAT)
+                user_events_reservations = user_events_reservations.filter(event_occurrence__start__gte=from_date)
+
+            if to_date:
+                to_date = datetime.strptime(to_date, DATE_FORMAT)
+                user_events_reservations = user_events_reservations.filter(event_occurrence__end__lte=to_date)
+        except (ValueError, TypeError):
+            return Response(
+                {"errors": "Dates format must be 'YYYY-MM-DD'"}, status=status.HTTP_400_BAD_REQUEST
+            )
         today = date.today()
         age_18_birth_year = (today - relativedelta(years=18)).year
         age_35_birth_year = (today - relativedelta(years=35)).year
