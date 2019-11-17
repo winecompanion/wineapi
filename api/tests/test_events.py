@@ -569,6 +569,32 @@ class TestEvents(TestCase):
             )
         )
 
+    def test_show_all_occurrences_of_event_when_owner(self):
+        """Test returning events with only future occurrencies"""
+        event = Event.objects.create(name='Evento 1', description='Desc 1', winery=self.winery, price=0.0)
+        EventOccurrence.objects.create(
+            start='2018-10-31T20:00:00',
+            end='2018-10-31T23:00:00',
+            vacancies=50,
+            event=event
+        )
+        EventOccurrence.objects.create(
+            start='2030-05-31T20:00:00',
+            end='2030-05-31T23:00:00',
+            vacancies=50,
+            event=event
+        )
+        self.client.force_login(self.winery_user)
+        res = self.client.get(
+            reverse("event-detail", kwargs={'pk': event.id})
+        )
+        self.assertFalse(
+            all(
+                [datetime.strptime(occurrence['start'], "%Y-%m-%dT%H:%M:%S") > datetime.now()
+                    for occurrence in res.data['occurrences']]
+            )
+        )
+
     def test_get_winery_events(self):
         event = Event.objects.create(
             name='Event from winery',
