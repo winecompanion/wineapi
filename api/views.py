@@ -5,6 +5,7 @@ from datetime import (
 from dateutil.relativedelta import relativedelta
 
 from django.db.models import (
+    Avg,
     Case,
     Count,
     IntegerField,
@@ -12,7 +13,10 @@ from django.db.models import (
     Sum,
     When,
 )
-from django.db.models.functions import ExtractMonth
+from django.db.models.functions import (
+    Coalesce,
+    ExtractMonth,
+)
 from django_filters import (
     DateTimeFromToRangeFilter,
     FilterSet,
@@ -639,6 +643,13 @@ class ReportsView(APIView):
                     midage_sum=Sum('midage'),
                     old_sum=Sum('old')
                 )
+            ),
+            "reservations_by_rating": (
+                user_events
+                .values("name")
+                .annotate(avg_rating=Coalesce(Avg("rating__rate"), 0))
+                .values("name", "avg_rating")
+                .order_by("-avg_rating")[:10]
             )
         }
 
