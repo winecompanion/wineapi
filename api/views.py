@@ -650,6 +650,14 @@ class ReportsView(APIView):
                 .annotate(avg_rating=Coalesce(Avg("rating__rate"), 0))
                 .values("name", "avg_rating")
                 .order_by("-avg_rating")[:10]
+            ),
+            "reservations_by_earnings": (
+                user_events_reservations
+                .values("event_occurrence__event__name")
+                .annotate(earnings=Sum("paid_amount"))
+                .annotate(name=F("event_occurrence__event__name"))
+                .values("name", "earnings")
+                .order_by("-earnings")[:10]
             )
         }
 

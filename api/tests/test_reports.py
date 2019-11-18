@@ -212,6 +212,12 @@ class TestReports(TestCase):
                 "avg_rating": 3,
             },
         ]
+        expected_reservations_by_earnings = [
+            {
+                "name": self.event_1.name,
+                "earnings": 3000,
+            },
+        ]
         expected_attendees_languages = [
             {
                 'language': 'French',
@@ -247,6 +253,7 @@ class TestReports(TestCase):
         self.assertEqual(list(response.data['reservations_by_event']), expected_reservations_by_event)
         self.assertEqual(list(response.data['reservations_by_month']), expected_reservations_by_month)
         self.assertEqual(list(response.data['reservations_by_rating']), expected_reservations_by_rating)
+        self.assertEqual(list(response.data['reservations_by_earnings']), expected_reservations_by_earnings)
         self.assertEqual(list(response.data['attendees_languages']), expected_attendees_languages)
         self.assertEqual(list(response.data['attendees_countries']), expected_attendees_countries)
         self.assertEqual(list(response.data['attendees_age_groups']), expected_attendees_age_groups)
