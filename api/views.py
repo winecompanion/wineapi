@@ -572,16 +572,19 @@ class ReportsView(APIView):
         DATE_FORMAT = "%Y-%m-%d"
         user_events = request.user.winery.events.all()
         user_events_reservations = Reservation.objects.filter(event_occurrence__event__in=user_events)
+        user_events_ratings = Rate.objects.filter(event__in=user_events)
         from_date = request.query_params.get('from_date')
         to_date = request.query_params.get('to_date')
         try:
             if from_date:
                 from_date = datetime.strptime(from_date, DATE_FORMAT)
                 user_events_reservations = user_events_reservations.filter(event_occurrence__start__gte=from_date)
+                user_events_ratings = user_events_ratings.filter(created__gte=from_date)
 
             if to_date:
                 to_date = datetime.strptime(to_date, DATE_FORMAT)
                 user_events_reservations = user_events_reservations.filter(event_occurrence__end__lte=to_date)
+                user_events_ratings = user_events_ratings.filter(created__lte=to_date)
         except (ValueError, TypeError):
             return Response(
                 {"errors": "Dates format must be 'YYYY-MM-DD'"}, status=status.HTTP_400_BAD_REQUEST
@@ -645,9 +648,10 @@ class ReportsView(APIView):
                 )
             ),
             "events_by_rating": (
-                user_events
-                .values("name")
-                .annotate(avg_rating=Coalesce(Avg("rating__rate"), 0))
+                user_events_ratings
+                .values("event__name")
+                .annotate(avg_rating=Coalesce(Avg("rate"), 0))
+                .annotate(name=F("event__name"))
                 .values("name", "avg_rating")
                 .order_by("-avg_rating")[:10]
             ),
