@@ -5,6 +5,7 @@ from datetime import (
 from dateutil.relativedelta import relativedelta
 
 from django.db.models import (
+    Avg,
     Case,
     Count,
     IntegerField,
@@ -12,7 +13,10 @@ from django.db.models import (
     Sum,
     When,
 )
-from django.db.models.functions import ExtractMonth
+from django.db.models.functions import (
+    Coalesce,
+    ExtractMonth,
+)
 from django_filters import (
     DateTimeFromToRangeFilter,
     FilterSet,
@@ -568,16 +572,19 @@ class ReportsView(APIView):
         DATE_FORMAT = "%Y-%m-%d"
         user_events = request.user.winery.events.all()
         user_events_reservations = Reservation.objects.filter(event_occurrence__event__in=user_events)
+        user_events_ratings = Rate.objects.filter(event__in=user_events)
         from_date = request.query_params.get('from_date')
         to_date = request.query_params.get('to_date')
         try:
             if from_date:
                 from_date = datetime.strptime(from_date, DATE_FORMAT)
                 user_events_reservations = user_events_reservations.filter(event_occurrence__start__gte=from_date)
+                user_events_ratings = user_events_ratings.filter(created__gte=from_date)
 
             if to_date:
                 to_date = datetime.strptime(to_date, DATE_FORMAT)
                 user_events_reservations = user_events_reservations.filter(event_occurrence__end__lte=to_date)
+                user_events_ratings = user_events_ratings.filter(created__lte=to_date)
         except (ValueError, TypeError):
             return Response(
                 {"errors": "Dates format must be 'YYYY-MM-DD'"}, status=status.HTTP_400_BAD_REQUEST
@@ -639,6 +646,22 @@ class ReportsView(APIView):
                     midage_sum=Sum('midage'),
                     old_sum=Sum('old')
                 )
+            ),
+            "events_by_rating": (
+                user_events_ratings
+                .values("event__name")
+                .annotate(avg_rating=Coalesce(Avg("rate"), 0))
+                .annotate(name=F("event__name"))
+                .values("name", "avg_rating")
+                .order_by("-avg_rating")[:10]
+            ),
+            "reservations_by_earnings": (
+                user_events_reservations
+                .values("event_occurrence__event__name")
+                .annotate(earnings=Sum("paid_amount"))
+                .annotate(name=F("event_occurrence__event__name"))
+                .values("name", "earnings")
+                .order_by("-earnings")[:10]
             )
         }
 

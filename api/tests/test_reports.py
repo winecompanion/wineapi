@@ -8,6 +8,7 @@ from api.models import (
     Event,
     EventCategory,
     EventOccurrence,
+    Rate,
     Reservation,
     Winery,
 )
@@ -114,6 +115,32 @@ class TestReports(TestCase):
             event_occurrence=self.event_occ_december,
         )
 
+        Rate.objects.create(
+            rate=5,
+            user=self.tourist_1,
+            comment="test_comment",
+            event=self.event_1,
+        )
+        Rate.objects.create(
+            rate=4,
+            user=self.tourist_2,
+            comment="test_comment",
+            event=self.event_1,
+        )
+
+        Rate.objects.create(
+            rate=3,
+            user=self.tourist_1,
+            comment="test_comment",
+            event=self.event_2,
+        )
+        Rate.objects.create(
+            rate=3,
+            user=self.tourist_2,
+            comment="test_comment",
+            event=self.event_2,
+        )
+
     def test_reservations_report(self):
         self.client.force_login(self.user)
         response = self.client.get(
@@ -175,6 +202,22 @@ class TestReports(TestCase):
                 "count": 1,
             },
         ]
+        expected_events_by_rating = [
+            {
+                "name": self.event_1.name,
+                "avg_rating": 4.5,
+            },
+            {
+                "name": self.event_2.name,
+                "avg_rating": 3,
+            },
+        ]
+        expected_reservations_by_earnings = [
+            {
+                "name": self.event_1.name,
+                "earnings": 3000,
+            },
+        ]
         expected_attendees_languages = [
             {
                 'language': 'French',
@@ -209,6 +252,8 @@ class TestReports(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(list(response.data['reservations_by_event']), expected_reservations_by_event)
         self.assertEqual(list(response.data['reservations_by_month']), expected_reservations_by_month)
+        self.assertEqual(list(response.data['events_by_rating']), expected_events_by_rating)
+        self.assertEqual(list(response.data['reservations_by_earnings']), expected_reservations_by_earnings)
         self.assertEqual(list(response.data['attendees_languages']), expected_attendees_languages)
         self.assertEqual(list(response.data['attendees_countries']), expected_attendees_countries)
         self.assertEqual(list(response.data['attendees_age_groups']), expected_attendees_age_groups)
