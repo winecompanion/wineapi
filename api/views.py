@@ -644,7 +644,7 @@ class ReportsView(APIView):
                     old_sum=Sum('old')
                 )
             ),
-            "reservations_by_rating": (
+            "events_by_rating": (
                 user_events
                 .values("name")
                 .annotate(avg_rating=Coalesce(Avg("rating__rate"), 0))

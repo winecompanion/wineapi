@@ -202,7 +202,7 @@ class TestReports(TestCase):
                 "count": 1,
             },
         ]
-        expected_reservations_by_rating = [
+        expected_events_by_rating = [
             {
                 "name": self.event_1.name,
                 "avg_rating": 4.5,
@@ -252,7 +252,7 @@ class TestReports(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(list(response.data['reservations_by_event']), expected_reservations_by_event)
         self.assertEqual(list(response.data['reservations_by_month']), expected_reservations_by_month)
-        self.assertEqual(list(response.data['reservations_by_rating']), expected_reservations_by_rating)
+        self.assertEqual(list(response.data['events_by_rating']), expected_events_by_rating)
         self.assertEqual(list(response.data['reservations_by_earnings']), expected_reservations_by_earnings)
         self.assertEqual(list(response.data['attendees_languages']), expected_attendees_languages)
         self.assertEqual(list(response.data['attendees_countries']), expected_attendees_countries)
