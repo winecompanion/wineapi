@@ -37,7 +37,6 @@ from rest_framework.viewsets import GenericViewSet
 
 from . import (
     DEFAULT_CANCELLATION_REASON,
-    VARIETALS,
 )
 from users.permissions import (
     AdminOnly,
@@ -64,6 +63,9 @@ from .models import (
     ImagesWinery,
     ImagesEvent,
     ImagesWines,
+    Varietal,
+    Gender,
+    Language,
 )
 from .serializers import (
     CountrySerializer,
@@ -77,6 +79,9 @@ from .serializers import (
     WineLineSerializer,
     WineSerializer,
     FileSerializer,
+    VarietalSerializer,
+    GenderSerializer,
+    LanguageSerializer,
 )
 
 
@@ -319,6 +324,51 @@ class CountryView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED)
 
 
+class LanguageView(viewsets.ModelViewSet):
+    queryset = Language.objects.all()
+    serializer_class = LanguageSerializer
+    model_class = Language
+
+    def create(self, request):
+        serializer = LanguageSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        language = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('countries-detail', args=[language.id])},
+            status=status.HTTP_201_CREATED)
+
+
+class GenderView(viewsets.ModelViewSet):
+    queryset = Gender.objects.all()
+    serializer_class = GenderSerializer
+    model_class = Gender
+
+    def create(self, request):
+        serializer = GenderSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        gender = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('countries-detail', args=[gender.id])},
+            status=status.HTTP_201_CREATED)
+
+
+class VarietalView(viewsets.ModelViewSet):
+    queryset = Varietal.objects.all()
+    serializer_class = VarietalSerializer
+    model_class = Varietal
+
+    def create(self, request):
+        serializer = VarietalSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        varietal = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('countries-detail', args=[varietal.id])},
+            status=status.HTTP_201_CREATED)
+
+
 class EventCategoryView(viewsets.ModelViewSet):
     queryset = EventCategory.objects.all()
     serializer_class = EventCategorySerializer
@@ -378,12 +428,6 @@ class ReservationView(viewsets.ModelViewSet):
             return Response(
                 {"errors": "Bad Request."}, status=status.HTTP_400_BAD_REQUEST
             )
-
-
-class VarietalsView(APIView):
-    def get(self, request):
-        varietals = [{"id": k, "value": v} for k, v in VARIETALS]
-        return Response(varietals)
 
 
 class RatingView(viewsets.ModelViewSet):
@@ -612,8 +656,8 @@ class ReportsView(APIView):
             ),
             "attendees_languages": (
                 user_events_reservations
-                .values("user__language")
-                .annotate(language=F("user__language"))
+                .values("user__language__name")
+                .annotate(language=F("user__language__name"))
                 .annotate(count=Count("id"))
                 .values("language", "count")
             ),

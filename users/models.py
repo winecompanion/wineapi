@@ -6,10 +6,10 @@ from rest_framework import serializers
 from django.utils import timezone
 from django.db import models
 
-from api.models import Winery, Country
+from api.models import Winery, Country, Gender, Language
 from api.serializers import WinerySerializer
 
-from . import ADMIN, GENDERS, LANGUAGES, TOURIST, WINERY
+from . import ADMIN, TOURIST, WINERY
 
 
 USER_TYPE_CHOICES = [
@@ -71,8 +71,8 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
 
     winery = models.ForeignKey('api.winery', null=True, blank=True, on_delete=models.CASCADE)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    gender = models.CharField(choices=GENDERS, max_length=8)
-    language = models.CharField(choices=LANGUAGES, max_length=8)
+    gender = models.ForeignKey(Gender, on_delete=models.PROTECT)
+    language = models.ForeignKey(Language, on_delete=models.PROTECT)
     phone = models.CharField(max_length=15)
 
     objects = WineUserManager()
@@ -146,7 +146,7 @@ class UserSerializer(serializers.ModelSerializer):
         return winery
 
     def to_representation(self, obj):
-        self.fields['gender'] = serializers.CharField(source='get_gender_display')
-        self.fields['language'] = serializers.CharField(source='get_language_display')
-        self.fields['country'] = serializers.CharField(source='country.name')
+        self.fields['gender'] = serializers.SlugRelatedField(slug_field='name', read_only=True)
+        self.fields['language'] = serializers.SlugRelatedField(slug_field='name', read_only=True)
+        self.fields['country'] = serializers.SlugRelatedField(slug_field='name', read_only=True)
         return super().to_representation(obj)

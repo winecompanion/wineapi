@@ -22,6 +22,9 @@ from .models import (
     Rate,
     Reservation,
     Mail,
+    Varietal,
+    Language,
+    Gender,
 )
 
 
@@ -59,6 +62,30 @@ class CountrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Country
+        fields = ['id', 'name']
+
+
+class GenderSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField
+
+    class Meta:
+        model = Gender
+        fields = ['id', 'name']
+
+
+class LanguageSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField
+
+    class Meta:
+        model = Language
+        fields = ['id', 'name']
+
+
+class VarietalSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField
+
+    class Meta:
+        model = Varietal
         fields = ['id', 'name']
 
 
@@ -275,7 +302,7 @@ class WineSerializer(serializers.ModelSerializer):
         return wine
 
     def to_representation(self, obj):
-        self.fields['varietal'] = serializers.CharField(source='get_varietal_display')
+        self.fields['varietal'] = serializers.SlugRelatedField(slug_field='name', read_only=True)
         return super().to_representation(obj)
 
 

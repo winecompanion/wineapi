@@ -4,21 +4,23 @@ from django.core.exceptions import ValidationError
 
 from rest_framework import status
 
-from api.models import Country
-from . import TOURIST, WINERY, GENDER_OTHER, LANGUAGE_ENGLISH
+from api.models import Country, Gender, Language
+from . import TOURIST, WINERY
 from .models import WineUser, UserSerializer
 
 
 class TestUser(TestCase):
     def setUp(self):
+        self.gender = Gender.objects.create(name='Other')
+        self.language = Language.objects.create(name='English')
         self.country = Country.objects.create(name='Argentina')
         self.valid_user_creation_data = {
             'email': 'example@winecompanion.com',
             'password': 'testuserpass',
             'first_name': 'First Name',
             'last_name': 'Last Name',
-            'gender': GENDER_OTHER,
-            'language': LANGUAGE_ENGLISH,
+            'gender': self.gender,
+            'language': self.language,
             'phone': '2616489178',
             'country': self.country
         }
@@ -27,8 +29,8 @@ class TestUser(TestCase):
             'password': 'testuserpass',
             'first_name': 'First Name',
             'last_name': 'Last Name',
-            'gender': GENDER_OTHER,
-            'language': LANGUAGE_ENGLISH,
+            'gender': self.gender.id,
+            'language': self.language.id,
             'phone': '2616489178',
             'country': self.country.id
         }
@@ -98,8 +100,8 @@ class TestUser(TestCase):
             email='testuser@winecompanion.com',
             password='1234',
             is_staff=True,
-            gender=GENDER_OTHER,
-            language=LANGUAGE_ENGLISH,
+            gender=self.gender,
+            language=self.language,
             country=self.country,
         )
         self.client.force_login(user)

@@ -5,16 +5,17 @@ from django.urls import reverse
 from rest_framework import status
 
 from api import RESERVATION_CONFIRMED, RESERVATION_CANCELLED
-from api.models import Country, Event, EventOccurrence, Reservation, Winery
+from api.models import Country, Event, EventOccurrence, Reservation, Winery, Gender, Language
 from api.serializers import ReservationSerializer
 
-from users import GENDER_OTHER, LANGUAGE_ENGLISH
 from users.models import WineUser
 
 
 class TestReservation(TestCase):
     def setUp(self):
         self.country = Country.objects.create(name='Argentina')
+        self.gender = Gender.objects.create(name='Male')
+        self.language = Language.objects.create(name='English')
         self.winery = Winery.objects.create(
                 name='My Winery',
                 description='Test Winery',
@@ -26,8 +27,8 @@ class TestReservation(TestCase):
             password='12345678',
             first_name='User',
             last_name='Test',
-            gender=GENDER_OTHER,
-            language=LANGUAGE_ENGLISH,
+            gender=self.gender,
+            language=self.language,
             country=self.country,
             winery=self.winery,
         )
@@ -153,8 +154,8 @@ class TestReservation(TestCase):
             email='user@admin.com',
             password='12345678',
             is_staff=True,
-            gender=GENDER_OTHER,
-            language=LANGUAGE_ENGLISH,
+            gender=self.gender,
+            language=self.language,
             country=self.country,
         )
         self.client.force_login(admin_user)
