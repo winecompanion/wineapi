@@ -8,7 +8,6 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.views import APIView
 
 from django_rest_passwordreset.signals import reset_password_token_created
 

@@ -58,10 +58,10 @@ class Language(models.Model):
 
 
 class Varietal(models.Model):
-    name = models.CharField(max_length=30)
+    value = models.CharField(max_length=30)
 
     def __str__(self):
-        return self.name
+        return self.value
 
 
 class Winery(models.Model):

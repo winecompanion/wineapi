@@ -87,7 +87,7 @@ class TestWines(TestCase):
         self.country = Country.objects.create(name='Argentina')
         self.gender = Gender.objects.create(name='Other')
         self.language = Language.objects.create(name='English')
-        self.varietal = Varietal.objects.create(name='Malbec')
+        self.varietal = Varietal.objects.create(value='Malbec')
         self.winery = Winery.objects.create(
                 name='Bodega1',
                 description='Test Bodega',
@@ -187,7 +187,7 @@ class TestWines(TestCase):
         response = self.client.get(
             reverse('varietals-list')
         )
-        expected = [{'id': self.varietal.id, 'name': self.varietal.name}]
+        expected = [{'id': self.varietal.id, 'value': self.varietal.value}]
         self.assertEqual(response.data, expected)
 
 

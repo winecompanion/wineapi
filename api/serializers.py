@@ -86,7 +86,7 @@ class VarietalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Varietal
-        fields = ['id', 'name']
+        fields = ['id', 'value']
 
 
 class VenueSerializer(serializers.ModelSerializer):
@@ -204,13 +204,15 @@ class EventSerializer(serializers.ModelSerializer):
                         event=instance
                     )
 
-        categories = validated_data.get('categories', instance.categories.all())
-        instance.categories.clear()
+        categories = validated_data.get('categories')
+        if categories:
+            instance.categories.clear()
         for category in categories:
             instance.categories.add(get_object_or_404(EventCategory, name=category['name']))
 
-        tags = validated_data.get('tags', instance.tags.all())
-        instance.tags.clear()
+        tags = validated_data.get('tags')
+        if tags:
+            instance.tags.clear()
         for tag in tags:
             instance.tags.add(get_object_or_404(Tag, name=tag['name']))
 
@@ -302,7 +304,7 @@ class WineSerializer(serializers.ModelSerializer):
         return wine
 
     def to_representation(self, obj):
-        self.fields['varietal'] = serializers.SlugRelatedField(slug_field='name', read_only=True)
+        self.fields['varietal'] = serializers.SlugRelatedField(slug_field='value', read_only=True)
         return super().to_representation(obj)
 
 
