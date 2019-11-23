@@ -21,6 +21,8 @@ from api.views import (
     WineryView,
     WineLineView,
     WineView,
+    GenderView,
+    LanguageView,
 )
 
 router = routers.DefaultRouter()
@@ -84,6 +86,8 @@ restaurant_reservations_router.register(r'reservations', EventReservationsView, 
 router.register(r'tags', TagView, basename='tags')
 router.register(r'countries', CountryView, basename='countries')
 router.register(r'varietals', VarietalView, basename='varietals')
+router.register(r'languages', LanguageView, basename='languages')
+router.register(r'genders', GenderView, basename='genders')
 router.register(r'event-categories', EventCategoryView, basename='event-categories')
 router.register(r'approve-wineries', WineryApprovalView, basename='approve-wineries')
 

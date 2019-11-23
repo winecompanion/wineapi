@@ -43,9 +43,12 @@ class WineUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-
-        if not getattr(extra_fields, 'country', None):
-            extra_fields['country'] = Country.objects.all().first()
+        try:
+            extra_fields['country'] = Country.objects.get(id=extra_fields['country'])
+            extra_fields['gender'] = Gender.objects.get(id=extra_fields['gender'])
+            extra_fields['language'] = Language.objects.get(id=extra_fields['language'])
+        except Exception:
+            raise ValueError
 
         extra_fields['user_type'] = ADMIN
 

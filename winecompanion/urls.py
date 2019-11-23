@@ -25,15 +25,12 @@ from rest_framework_simplejwt.views import (
 )
 
 from users.token import MyTokenObtainPairView
-from api.views import GenderView, LanguageView
 from users.views import WineUserView
 
 schema_view = get_swagger_view(title='WineCompanion APIs')
 
 router = routers.DefaultRouter()
 router.register(r'users', WineUserView, basename='users')
-router.register(r'languages', LanguageView, basename='languages')
-router.register(r'genders', GenderView, basename='genders')
 
 urlpatterns = [
     path(r'swagger-docs/', schema_view),

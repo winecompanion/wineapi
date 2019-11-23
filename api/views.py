@@ -335,7 +335,7 @@ class LanguageView(viewsets.ModelViewSet):
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         language = serializer.create(serializer.validated_data)
         return Response(
-            {'url': reverse('countries-detail', args=[language.id])},
+            {'url': reverse('languages-detail', args=[language.id])},
             status=status.HTTP_201_CREATED)
 
 
@@ -350,7 +350,7 @@ class GenderView(viewsets.ModelViewSet):
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         gender = serializer.create(serializer.validated_data)
         return Response(
-            {'url': reverse('countries-detail', args=[gender.id])},
+            {'url': reverse('genders-detail', args=[gender.id])},
             status=status.HTTP_201_CREATED)
 
 
