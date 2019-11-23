@@ -43,7 +43,6 @@ class TestUser(TestCase):
         }
         self.users_required_fields = set([
             'email',
-            'password',
             'first_name',
             'last_name',
             'gender',
@@ -71,6 +70,7 @@ class TestUser(TestCase):
     def test_invalid_user_creation(self):
         """Test required fields"""
         user = WineUser(**self.invalid_user_data)
+        self.users_required_fields.add('password')
         with self.assertRaises(ValidationError) as cm:
             user.full_clean()
         self.assertEqual(
@@ -150,8 +150,9 @@ class TestUser(TestCase):
 
     def test_user_login(self):
         user = WineUser.objects.create_user(**self.valid_user_creation_data)
+        user.set_password('testpass')
+        user.save()
         res = self.client.post(
             reverse('token_obtain_pair'),
-            {'email': user.email, 'password': self.valid_user_post_data['password']},
-        )
+            {'email': user.email, 'password': 'testpass'})
         self.assertEqual(set(['access', 'refresh']), set(res.data.keys()))

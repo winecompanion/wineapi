@@ -10,17 +10,28 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 
-from django_rest_passwordreset.signals import reset_password_token_created
+from django_rest_passwordreset.signals import reset_password_token_created, post_password_reset
+from django_rest_passwordreset.models import ResetPasswordToken
 
 from . import LANGUAGES, GENDERS
 from .models import WineUser, UserSerializer
 from api.models import Reservation, Mail
 from api.serializers import ReservationSerializer
 
+
 from .permissions import (
     AllowCreateUserButUpdateOwnerOnly,
     ListAdminOnly,
 )
+
+HTTP_USER_AGENT_HEADER = getattr(settings, 'DJANGO_REST_PASSWORDRESET_HTTP_USER_AGENT_HEADER', 'HTTP_USER_AGENT')
+HTTP_IP_ADDRESS_HEADER = getattr(settings, 'DJANGO_REST_PASSWORDRESET_IP_ADDRESS_HEADER', 'REMOTE_ADDR')
+
+
+@receiver(post_password_reset)
+def post_password_reset(user, *args, **kwargs):
+    user.activated = True
+    user.save()
 
 
 @receiver(reset_password_token_created)
@@ -52,14 +63,23 @@ class WineUserView(viewsets.ModelViewSet):
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         wine_user = serializer.create(serializer.validated_data)
 
-        # send email
-        subject = 'Bienvenido a Winecompanion'
-        html_message = render_to_string(
+        token = ResetPasswordToken.objects.create(
+                        user=wine_user,
+                        user_agent=request.META.get(HTTP_USER_AGENT_HEADER, ''),
+                        ip_address=request.META.get(HTTP_IP_ADDRESS_HEADER, ''),
+                    )
+        url = settings.URL_FRONT_END
+        subject_activate = 'Winecompanion - Activate Account'
+        html_message_activate = render_to_string(
             'user_registration_template.html',
+            {
+                'user': wine_user.first_name,
+                'url': "{}{}confirm/{}".format(url, reverse('password_reset:reset-password-request'), token.key),
+            }
         )
-        plain_message = strip_tags(html_message)
-        Mail.send_mail(subject, plain_message, [wine_user.email], html_message=html_message)
 
+        plain_message_activate = strip_tags(html_message_activate)
+        Mail.send_mail(subject_activate, plain_message_activate, [wine_user.email], html_message=html_message_activate)
         return Response({'url': reverse('users-detail', args=[wine_user.id])}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'], name='get-user-reservations')

@@ -10,7 +10,8 @@ from api.models import Winery, Country
 from api.serializers import WinerySerializer
 
 from . import ADMIN, GENDERS, LANGUAGES, TOURIST, WINERY
-
+import random
+import string
 
 USER_TYPE_CHOICES = [
     (TOURIST, 'TOURIST'),
@@ -24,7 +25,7 @@ class WineUserManager(BaseUserManager):
     Custom user model manager where email is the unique identifiers
     for authentication instead of usernames.
     """
-    def create_user(self, email, password, **extra_fields):
+    def create_user(self, email, **extra_fields):
         """
         Create and save a User with the given email and password.
         """
@@ -32,7 +33,7 @@ class WineUserManager(BaseUserManager):
             raise ValueError('The Email must be set')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        user.set_password(password)
+        user.set_password(''.join(random.choices(string.ascii_uppercase + string.digits, k=20)))
         user.save()
         return user
 
@@ -53,7 +54,7 @@ class WineUserManager(BaseUserManager):
             raise ValueError('Superuser must have is_staff=True.')
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
-        return self.create_user(email, password, **extra_fields)
+        return self.create_user(email, **extra_fields)
 
 
 class WineUser(AbstractBaseUser, PermissionsMixin):
@@ -90,6 +91,7 @@ class WineUser(AbstractBaseUser, PermissionsMixin):
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializes a user for the api endpoint"""
+
     id = serializers.ReadOnlyField()
     winery = WinerySerializer(required=False)
     user_type = serializers.ReadOnlyField()
@@ -99,7 +101,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'email',
-            'password',
             'first_name',
             'last_name',
             'birth_date',
@@ -110,12 +111,6 @@ class UserSerializer(serializers.ModelSerializer):
             'winery',
             'user_type',
         )
-        extra_kwargs = {
-            'password': {
-                'write_only': True,
-                'style': {'input_type': 'password'}
-            },
-        }
 
     def create(self, validated_data):
         """Create and return a new user"""
