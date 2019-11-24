@@ -66,9 +66,9 @@ class TestWinery(TestCase):
             password='12345678',
             first_name='User',
             last_name='Test',
-            gender=self.gender,
-            language=self.language,
-            country=Country.objects.create(name='Test'),
+            gender=self.gender.id,
+            language=self.language.id,
+            country=Country.objects.create(name='Test').id,
         )
         winery = Winery.objects.create(name='Test Winery')
         self.assertIsNone(winery.available_since)

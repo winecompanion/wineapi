@@ -268,7 +268,10 @@ class EventSerializer(serializers.ModelSerializer):
         user = getattr(request, 'user', None)
         occurrences = EventOccurrence.objects.filter(event=event)
         if not (request and getattr(user, 'winery', None) and user.winery == event.winery):
-            occurrences = occurrences.filter(start__gt=datetime.now())
+            occurrences = occurrences.filter(
+                start__gt=datetime.now(),
+                cancelled__isnull=True,
+                )
         serializer = VenueSerializer(instance=occurrences, many=True)
         return serializer.data
 

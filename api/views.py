@@ -589,8 +589,31 @@ class RestaurantOccurrencesView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
-        event = get_object_or_404(Event, id=self.kwargs['restaurant_pk'])
-        return EventOccurrence.objects.filter(event=event.id)
+        restaurant = get_object_or_404(Event, id=self.kwargs.get("restaurant_pk"))
+        occurrences = EventOccurrence.objects.filter(
+            event=restaurant.id,
+            cancelled__isnull=True,
+        )
+        cancelled_occurrences = None
+        user_winery = getattr(self.request.user, 'winery', None)
+        if user_winery and user_winery == restaurant.winery:
+            cancelled_occurrences = EventOccurrence.objects.filter(
+                event=restaurant.id,
+                cancelled__isnull=False,
+            )
+        queryset = occurrences if not cancelled_occurrences else occurrences | cancelled_occurrences
+        return queryset.order_by('id')
+
+    @action(detail=True, methods=['post'], name='cancel-occurrence')
+    def cancel_occurrence(self, request, event_pk, pk):
+        occurrence = get_object_or_404(EventOccurrence, id=pk)
+        if occurrence.cancelled:
+            return Response({'detail': 'Occurrence already cancelled'}, status=status.HTTP_200_OK)
+        if not getattr(request.user, 'winery', None) or request.user.winery.id != occurrence.event.winery.id:
+            return Response({'detail': 'Access Denied'}, status=status.HTTP_403_FORBIDDEN)
+        reason = request.data.get('reason')
+        message = occurrence.cancel(reason)
+        return Response({'detail': message}, status=status.HTTP_200_OK)
 
 
 class WineryApprovalView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
