@@ -15,7 +15,6 @@ from . import (
     RESERVATION_STATUS,
     RESERVATION_CANCELLED,
     RESERVATION_CONFIRMED,
-    VARIETALS
 )
 
 
@@ -42,6 +41,27 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Gender(models.Model):
+    name = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.name
+
+
+class Language(models.Model):
+    name = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.name
+
+
+class Varietal(models.Model):
+    value = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.value
 
 
 class Winery(models.Model):
@@ -96,12 +116,7 @@ class Wine(models.Model):
     name = models.CharField(max_length=20)
     description = models.TextField()
     winery = models.ForeignKey(Winery, on_delete=models.CASCADE)
-    # to discuss: choices vs foreign key
-    varietal = models.CharField(
-        max_length=20,
-        choices=VARIETALS,
-        default='4',
-    )
+    varietal = models.ForeignKey(Varietal, on_delete=models.PROTECT)
     wine_line = models.ForeignKey(
         WineLine,
         related_name='wines',

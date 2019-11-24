@@ -22,6 +22,9 @@ from .models import (
     Rate,
     Reservation,
     Mail,
+    Varietal,
+    Language,
+    Gender,
 )
 
 
@@ -60,6 +63,30 @@ class CountrySerializer(serializers.ModelSerializer):
     class Meta:
         model = Country
         fields = ['id', 'name']
+
+
+class GenderSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField
+
+    class Meta:
+        model = Gender
+        fields = ['id', 'name']
+
+
+class LanguageSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField
+
+    class Meta:
+        model = Language
+        fields = ['id', 'name']
+
+
+class VarietalSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField
+
+    class Meta:
+        model = Varietal
+        fields = ['id', 'value']
 
 
 class VenueSerializer(serializers.ModelSerializer):
@@ -177,15 +204,17 @@ class EventSerializer(serializers.ModelSerializer):
                         event=instance
                     )
 
-        categories = validated_data.get('categories', instance.categories.all())
-        instance.categories.clear()
-        for category in categories:
-            instance.categories.add(get_object_or_404(EventCategory, name=category['name']))
+        categories = validated_data.get('categories')
+        if categories is not None:
+            instance.categories.clear()
+            for category in categories:
+                instance.categories.add(get_object_or_404(EventCategory, name=category['name']))
 
-        tags = validated_data.get('tags', instance.tags.all())
-        instance.tags.clear()
-        for tag in tags:
-            instance.tags.add(get_object_or_404(Tag, name=tag['name']))
+        tags = validated_data.get('tags')
+        if tags is not None:
+            instance.tags.clear()
+            for tag in tags:
+                instance.tags.add(get_object_or_404(Tag, name=tag['name']))
 
         instance.save()
         return instance
@@ -239,7 +268,10 @@ class EventSerializer(serializers.ModelSerializer):
         user = getattr(request, 'user', None)
         occurrences = EventOccurrence.objects.filter(event=event)
         if not (request and getattr(user, 'winery', None) and user.winery == event.winery):
-            occurrences = occurrences.filter(start__gt=datetime.now())
+            occurrences = occurrences.filter(
+                start__gt=datetime.now(),
+                cancelled__isnull=True,
+                )
         serializer = VenueSerializer(instance=occurrences, many=True)
         return serializer.data
 
@@ -275,7 +307,7 @@ class WineSerializer(serializers.ModelSerializer):
         return wine
 
     def to_representation(self, obj):
-        self.fields['varietal'] = serializers.CharField(source='get_varietal_display')
+        self.fields['varietal'] = serializers.SlugRelatedField(slug_field='value', read_only=True)
         return super().to_representation(obj)
 
 

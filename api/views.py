@@ -37,7 +37,6 @@ from rest_framework.viewsets import GenericViewSet
 
 from . import (
     DEFAULT_CANCELLATION_REASON,
-    VARIETALS,
 )
 from users.permissions import (
     AdminOnly,
@@ -64,6 +63,9 @@ from .models import (
     ImagesWinery,
     ImagesEvent,
     ImagesWines,
+    Varietal,
+    Gender,
+    Language,
 )
 from .serializers import (
     CountrySerializer,
@@ -77,6 +79,9 @@ from .serializers import (
     WineLineSerializer,
     WineSerializer,
     FileSerializer,
+    VarietalSerializer,
+    GenderSerializer,
+    LanguageSerializer,
 )
 
 
@@ -319,6 +324,51 @@ class CountryView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED)
 
 
+class LanguageView(viewsets.ModelViewSet):
+    queryset = Language.objects.all()
+    serializer_class = LanguageSerializer
+    model_class = Language
+
+    def create(self, request):
+        serializer = LanguageSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        language = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('languages-detail', args=[language.id])},
+            status=status.HTTP_201_CREATED)
+
+
+class GenderView(viewsets.ModelViewSet):
+    queryset = Gender.objects.all()
+    serializer_class = GenderSerializer
+    model_class = Gender
+
+    def create(self, request):
+        serializer = GenderSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        gender = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('genders-detail', args=[gender.id])},
+            status=status.HTTP_201_CREATED)
+
+
+class VarietalView(viewsets.ModelViewSet):
+    queryset = Varietal.objects.all()
+    serializer_class = VarietalSerializer
+    model_class = Varietal
+
+    def create(self, request):
+        serializer = VarietalSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        varietal = serializer.create(serializer.validated_data)
+        return Response(
+            {'url': reverse('countries-detail', args=[varietal.id])},
+            status=status.HTTP_201_CREATED)
+
+
 class EventCategoryView(viewsets.ModelViewSet):
     queryset = EventCategory.objects.all()
     serializer_class = EventCategorySerializer
@@ -378,12 +428,6 @@ class ReservationView(viewsets.ModelViewSet):
             return Response(
                 {"errors": "Bad Request."}, status=status.HTTP_400_BAD_REQUEST
             )
-
-
-class VarietalsView(APIView):
-    def get(self, request):
-        varietals = [{"id": k, "value": v} for k, v in VARIETALS]
-        return Response(varietals)
 
 
 class RatingView(viewsets.ModelViewSet):
@@ -545,8 +589,31 @@ class RestaurantOccurrencesView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
-        event = get_object_or_404(Event, id=self.kwargs['restaurant_pk'])
-        return EventOccurrence.objects.filter(event=event.id)
+        restaurant = get_object_or_404(Event, id=self.kwargs.get("restaurant_pk"))
+        occurrences = EventOccurrence.objects.filter(
+            event=restaurant.id,
+            cancelled__isnull=True,
+        )
+        cancelled_occurrences = None
+        user_winery = getattr(self.request.user, 'winery', None)
+        if user_winery and user_winery == restaurant.winery:
+            cancelled_occurrences = EventOccurrence.objects.filter(
+                event=restaurant.id,
+                cancelled__isnull=False,
+            )
+        queryset = occurrences if not cancelled_occurrences else occurrences | cancelled_occurrences
+        return queryset.order_by('id')
+
+    @action(detail=True, methods=['post'], name='cancel-occurrence')
+    def cancel_occurrence(self, request, restaurant_pk, pk):
+        occurrence = get_object_or_404(EventOccurrence, id=pk)
+        if occurrence.cancelled:
+            return Response({'detail': 'Occurrence already cancelled'}, status=status.HTTP_200_OK)
+        if not getattr(request.user, 'winery', None) or request.user.winery.id != occurrence.event.winery.id:
+            return Response({'detail': 'Access Denied'}, status=status.HTTP_403_FORBIDDEN)
+        reason = request.data.get('reason')
+        message = occurrence.cancel(reason)
+        return Response({'detail': message}, status=status.HTTP_200_OK)
 
 
 class WineryApprovalView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
@@ -612,8 +679,8 @@ class ReportsView(APIView):
             ),
             "attendees_languages": (
                 user_events_reservations
-                .values("user__language")
-                .annotate(language=F("user__language"))
+                .values("user__language__name")
+                .annotate(language=F("user__language__name"))
                 .annotate(count=Count("id"))
                 .values("language", "count")
             ),

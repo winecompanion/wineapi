@@ -4,15 +4,15 @@ from django.core.exceptions import ValidationError
 
 from rest_framework import status
 
-from users import GENDER_OTHER, LANGUAGE_ENGLISH
 from users.models import WineUser
-from api import VARIETALS
-from api.models import Country, Winery, WineLine, Wine
+from api.models import Country, Winery, WineLine, Wine, Gender, Language, Varietal
 from api.serializers import WinerySerializer, WineLineSerializer, WineSerializer
 
 
 class TestWinery(TestCase):
     def setUp(self):
+        self.gender = Gender.objects.create(name='Other')
+        self.language = Language.objects.create(name='English')
         self.valid_winery_data = {
                 'name': 'Bodega1',
                 'description': 'Hola',
@@ -66,9 +66,9 @@ class TestWinery(TestCase):
             password='12345678',
             first_name='User',
             last_name='Test',
-            gender=GENDER_OTHER,
-            language=LANGUAGE_ENGLISH,
-            country=Country.objects.create(name='Test'),
+            gender=self.gender.id,
+            language=self.language.id,
+            country=Country.objects.create(name='Test').id,
         )
         winery = Winery.objects.create(name='Test Winery')
         self.assertIsNone(winery.available_since)
@@ -85,6 +85,9 @@ class TestWinery(TestCase):
 class TestWines(TestCase):
     def setUp(self):
         self.country = Country.objects.create(name='Argentina')
+        self.gender = Gender.objects.create(name='Other')
+        self.language = Language.objects.create(name='English')
+        self.varietal = Varietal.objects.create(value='Malbec')
         self.winery = Winery.objects.create(
                 name='Bodega1',
                 description='Test Bodega',
@@ -93,8 +96,8 @@ class TestWines(TestCase):
         self.user = WineUser.objects.create(
             email='testuser@winecompanion.com',
             winery=self.winery,
-            gender=GENDER_OTHER,
-            language=LANGUAGE_ENGLISH,
+            gender=self.gender,
+            language=self.language,
             country=self.country,
         )
         self.wine_line = WineLine.objects.create(
@@ -105,7 +108,7 @@ class TestWines(TestCase):
                 'name': 'Example wine',
                 'description': 'Amazing wine',
                 'winery': self.winery.id,
-                'varietal': '1',
+                'varietal': self.varietal.id,
                 'wine_line': self.wine_line.id,
         }
         self.invalid_wine_data = {
@@ -115,10 +118,10 @@ class TestWines(TestCase):
             'name': 'Example wine',
             'description': 'Amazing wine',
             'winery': self.winery,
-            'varietal': '1',
+            'varietal': self.varietal,
             'wine_line': self.wine_line,
         }
-        self.wine_required_fields = set(['name', ])
+        self.wine_required_fields = set(['name', 'varietal'])
 
     def test_wine_creation(self):
         wine = Wine(**self.wine_creation_data)
@@ -129,7 +132,10 @@ class TestWines(TestCase):
         wine = Wine(**self.invalid_wine_data)
         with self.assertRaises(ValidationError) as context:
             wine.full_clean()
-        self.assertEqual(set(context.exception.error_dict), set(['name', 'winery', 'wine_line']))
+        self.assertEqual(
+            set(context.exception.error_dict),
+            set(['name', 'winery', 'wine_line', 'varietal'])
+        )
 
     def test_wine_serializer(self):
         serializer = WineSerializer(data=self.valid_wine_data)
@@ -179,15 +185,17 @@ class TestWines(TestCase):
 
     def test_varietal_get(self):
         response = self.client.get(
-            reverse('varietals')
+            reverse('varietals-list')
         )
-        expected = [{'id': k, 'value': v} for k, v in VARIETALS]
+        expected = [{'id': self.varietal.id, 'value': self.varietal.value}]
         self.assertEqual(response.data, expected)
 
 
 class TestWineLines(TestCase):
     def setUp(self):
         self.country = Country.objects.create(name='Argentina')
+        self.gender = Gender.objects.create(name='Other')
+        self.language = Language.objects.create(name='English')
         self.winery = Winery.objects.create(
                 name='Bodega1',
                 description='Test Bodega',
@@ -196,8 +204,8 @@ class TestWineLines(TestCase):
         self.user = WineUser.objects.create(
             email='testuser@winecompanion.com',
             winery=self.winery,
-            gender=GENDER_OTHER,
-            language=LANGUAGE_ENGLISH,
+            gender=self.gender,
+            language=self.language,
             country=self.country,
         )
         self.wine_line_creation_data = {
