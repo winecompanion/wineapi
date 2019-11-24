@@ -17,10 +17,12 @@ from api.views import (
     RestaurantsView,
     RestaurantOccurrencesView,
     TagView,
-    VarietalsView,
+    VarietalView,
     WineryView,
     WineLineView,
     WineView,
+    GenderView,
+    LanguageView,
 )
 
 router = routers.DefaultRouter()
@@ -83,6 +85,9 @@ restaurant_reservations_router.register(r'reservations', EventReservationsView, 
 # Admin
 router.register(r'tags', TagView, basename='tags')
 router.register(r'countries', CountryView, basename='countries')
+router.register(r'varietals', VarietalView, basename='varietals')
+router.register(r'languages', LanguageView, basename='languages')
+router.register(r'genders', GenderView, basename='genders')
 router.register(r'event-categories', EventCategoryView, basename='event-categories')
 router.register(r'approve-wineries', WineryApprovalView, basename='approve-wineries')
 
@@ -99,6 +104,5 @@ urlpatterns = [
     path('', include(restaurant_ratings_router.urls)),
     path('maps/', MapsView.as_view()),
     path('reports/reservations/', ReportsView.as_view(), name='reservation-count-reports'),
-    path('varietals/', VarietalsView.as_view(), name='varietals'),
     path('upload/', FileUploadView.as_view()),
 ]

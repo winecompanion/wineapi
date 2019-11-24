@@ -11,22 +11,31 @@ from api.models import (
     Rate,
     Reservation,
     Winery,
+    Gender,
+    Language,
 )
-from users import (
-    GENDER_MALE,
-    GENDER_FEMALE,
-    GENDER_OTHER,
-    LANGUAGE_SPANISH,
-    LANGUAGE_ENGLISH,
-    LANGUAGE_FRENCH,
-)
+
+
 from users.models import WineUser
+
+GENDER_MALE = 'Male'
+GENDER_FEMALE = 'Female'
+GENDER_OTHER = 'Other'
+LANGUAGE_SPANISH = 'Spanish'
+LANGUAGE_ENGLISH = 'English'
+LANGUAGE_FRENCH = 'French'
 
 
 class TestReports(TestCase):
     def setUp(self):
         self.client = Client()
         self.country = Country.objects.create(name='Argentina')
+        self.male = Gender.objects.create(name=GENDER_MALE)
+        self.spanish = Language.objects.create(name=LANGUAGE_SPANISH)
+        self.female = Gender.objects.create(name=GENDER_FEMALE)
+        self.english = Language.objects.create(name=LANGUAGE_ENGLISH)
+        self.other_gender = Gender.objects.create(name=GENDER_OTHER)
+        self.french = Language.objects.create(name=LANGUAGE_FRENCH)
 
         self.winery = Winery.objects.create(
             name='My Winery',
@@ -38,8 +47,8 @@ class TestReports(TestCase):
             password='testuserpass',
             first_name='First Name',
             last_name='Last Name',
-            gender=GENDER_OTHER,
-            language=LANGUAGE_ENGLISH,
+            gender=self.other_gender,
+            language=self.english,
             phone='2616489178',
             country=self.country,
             winery=self.winery,
@@ -50,8 +59,8 @@ class TestReports(TestCase):
             first_name='First Name',
             last_name='Last Name',
             birth_date='1950-03-02',
-            gender=GENDER_MALE,
-            language=LANGUAGE_SPANISH,
+            gender=self.male,
+            language=self.spanish,
             phone='2616489178',
             country=self.country,
         )
@@ -61,8 +70,8 @@ class TestReports(TestCase):
             first_name='First Name',
             last_name='Last Name',
             birth_date='2000-03-02',
-            gender=GENDER_FEMALE,
-            language=LANGUAGE_FRENCH,
+            gender=self.female,
+            language=self.french,
             phone='2616489178',
             country=self.country,
         )
