@@ -205,16 +205,16 @@ class EventSerializer(serializers.ModelSerializer):
                     )
 
         categories = validated_data.get('categories')
-        if categories:
+        if categories is not None:
             instance.categories.clear()
-        for category in categories:
-            instance.categories.add(get_object_or_404(EventCategory, name=category['name']))
+            for category in categories:
+                instance.categories.add(get_object_or_404(EventCategory, name=category['name']))
 
         tags = validated_data.get('tags')
-        if tags:
+        if tags is not None:
             instance.tags.clear()
-        for tag in tags:
-            instance.tags.add(get_object_or_404(Tag, name=tag['name']))
+            for tag in tags:
+                instance.tags.add(get_object_or_404(Tag, name=tag['name']))
 
         instance.save()
         return instance

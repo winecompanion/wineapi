@@ -605,7 +605,7 @@ class RestaurantOccurrencesView(viewsets.ModelViewSet):
         return queryset.order_by('id')
 
     @action(detail=True, methods=['post'], name='cancel-occurrence')
-    def cancel_occurrence(self, request, event_pk, pk):
+    def cancel_occurrence(self, request, restaurant_pk, pk):
         occurrence = get_object_or_404(EventOccurrence, id=pk)
         if occurrence.cancelled:
             return Response({'detail': 'Occurrence already cancelled'}, status=status.HTTP_200_OK)
