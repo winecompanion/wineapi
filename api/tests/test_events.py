@@ -23,7 +23,8 @@ class TestEvents(TestCase):
                 name='Bodega1',
                 description='Hola',
                 website='hola.com',
-                available_since=datetime.now()
+                location='POINT(-33.094345 -68.929015)',
+                available_since=datetime.now(),
         )
         self.winery_user = WineUser.objects.create(
             email='testuser@winecompanion.com',
