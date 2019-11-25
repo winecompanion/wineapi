@@ -134,7 +134,7 @@ class EventCategory(models.Model):
         return self.name
 
     class Meta:
-        verbose_name_plural = "EventCategories"
+        verbose_name_plural = "Event categories"
 
 
 class Event(models.Model):
@@ -199,6 +199,9 @@ class EventOccurrence(models.Model):
         success_message = 'The Occurrence has been cancelled'
         return success_message
 
+    def __str__(self):
+        return '{} - {}'.format(self.event.name, self.start)
+
 
 class Rate(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -218,6 +221,9 @@ class Rate(models.Model):
     @property
     def user_name(self):
         return self.user.full_name
+
+    def __str__(self):
+        return '{}: {}'.format(self.user.email, self.rate)
 
 
 class Reservation(models.Model):
