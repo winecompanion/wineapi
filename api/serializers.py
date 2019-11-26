@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from winecompanion import settings
 
@@ -298,7 +299,7 @@ class EventSerializer(serializers.ModelSerializer):
 
     def get_location(self, event):
         if event.winery.location:
-            return event.winery.location.json
+            return json.loads(event.winery.location.json)
         return None
 
 
