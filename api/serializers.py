@@ -1,6 +1,8 @@
+import json
 from datetime import datetime
 from winecompanion import settings
 
+from django.contrib.auth import get_user_model
 from django.db.models import Avg
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -115,6 +117,8 @@ class EventSerializer(serializers.ModelSerializer):
     vacancies = serializers.IntegerField(write_only=True)
     images = ImageUrlField(read_only=True, many=True)
     winery = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    contact = serializers.SerializerMethodField(read_only=True)
+    location = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Event
@@ -132,6 +136,8 @@ class EventSerializer(serializers.ModelSerializer):
             'occurrences',
             'schedule',
             'vacancies',
+            'contact',
+            'location',
             'images',
         ]
 
@@ -287,6 +293,15 @@ class EventSerializer(serializers.ModelSerializer):
         rate = Rate.objects.filter(event=event, user=user).first()
         return RateSerializer(rate).data if rate else None
 
+    def get_contact(self, event):
+        user = get_user_model().objects.filter(winery=event.winery).first()
+        return {'email': user.email, 'phone_number': user.phone} if user else None
+
+    def get_location(self, event):
+        if event.winery.location:
+            return json.loads(event.winery.location.json)
+        return None
+
 
 class WineSerializer(serializers.ModelSerializer):
     """Serializes wines for the api endpoint"""
@@ -340,10 +355,24 @@ class WinerySerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     wine_lines = WineLineSerializer(many=True, read_only=True)
     images = ImageUrlField(read_only=True, many=True)
+    contact = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Winery
-        fields = ('id', 'name', 'description', 'website', 'wine_lines', 'location', 'images')
+        fields = (
+            'id',
+            'name',
+            'description',
+            'website',
+            'wine_lines',
+            'location',
+            'contact',
+            'images',
+        )
+
+    def get_contact(self, winery):
+        user = get_user_model().objects.filter(winery=winery).first()
+        return {'email': user.email, 'phone_number': user.phone} if user else None
 
 
 class EventBriefSerializer(serializers.ModelSerializer):

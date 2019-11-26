@@ -13,6 +13,10 @@ class TestRatings(TestCase):
         self.gender = Gender.objects.create(name='Other')
         self.language = Language.objects.create(name='English')
         self.country = Country.objects.create(name='Argentina')
+        self.winery = Winery.objects.create(
+            name='Winery',
+            description='Test Winery',
+        )
         self.user = WineUser.objects.create_user(
             email='user@test.com',
             password='abcd',
@@ -20,11 +24,8 @@ class TestRatings(TestCase):
             last_name='User',
             gender=self.gender,
             language=self.language,
-            country=self.country
-        )
-        self.winery = Winery.objects.create(
-            name='Winery',
-            description='Test Winery',
+            country=self.country,
+            winery=self.winery,
         )
         self.event = Event.objects.create(
             name='Event 1',

@@ -146,20 +146,18 @@ class EventsView(viewsets.ModelViewSet):
             )
 
     def get_queryset(self):
+        if getattr(self.request.user, 'winery', None):
+            own_events = Event.objects.filter(
+                winery=self.request.user.winery.id,
+            ).exclude(categories__name__icontains='restaurant').distinct()
+            return own_events
+
         all_events = Event.objects.filter(
             occurrences__start__gt=datetime.now(),
             occurrences__cancelled__isnull=True,
             cancelled__isnull=True,
         ).exclude(categories__name__icontains='restaurant').distinct()
-
-        own_events = None
-        if getattr(self.request.user, 'winery', None):
-            own_events = Event.objects.filter(
-                winery=self.request.user.winery.id,
-            ).exclude(categories__name__icontains='restaurant').distinct()
-
-        queryset = all_events if not own_events else all_events | own_events
-        return queryset
+        return all_events
 
 
 class WineryView(viewsets.ModelViewSet):
